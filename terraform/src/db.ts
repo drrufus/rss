@@ -17,21 +17,21 @@ export function createDatabase(scope: Construct, name: string): IDatabasesCreati
                 name: 'id',
                 type: 'S',
             },
-            // {
-            //     name: 'ownerEmail',
-            //     type: 'S',
-            // },
+            {
+                name: 'ownerEmail',
+                type: 'S',
+            },
         ],
-        // globalSecondaryIndex: [
-        //     {
-        //         name: 'some-index',
-        //         hashKey: 'ownerEmail',
-        //         projectionType: 'INCLUDE',
-        //         writeCapacity: 5,
-        //         readCapacity: 5,
-        //         nonKeyAttributes: ['id'],
-        //     },
-        // ],
+        globalSecondaryIndex: [
+            {
+                name: 'some-index',
+                hashKey: 'ownerEmail',
+                projectionType: 'INCLUDE',
+                writeCapacity: 5,
+                readCapacity: 5,
+                nonKeyAttributes: ['id'],
+            },
+        ],
     });
 
     const sourcesTableName = `${name}-sources-table`;

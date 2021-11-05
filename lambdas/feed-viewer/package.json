@@ -1,0 +1,17 @@
+{
+  "name": "feed-viewer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "compile": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.76",
+    "aws-sdk": "^2.1018.0",
+    "typescript": "^4.3.2"
+  }
+}

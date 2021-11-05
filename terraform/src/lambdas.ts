@@ -24,7 +24,10 @@ export function createLambdas(scope: Construct, name: string, databases: IDataba
                         "Sid": "",
                         "Effect": "Allow",
                         "Action": "dynamodb:*",
-                        "Resource": "${databases.feedsTableArn}"
+                        "Resource": [
+                            "${databases.feedsTableArn}",
+                            "${databases.feedsTableArn}/index/*"
+                        ]
                     },
                     {
                         "Sid": "",
@@ -83,6 +86,10 @@ export function createLambdas(scope: Construct, name: string, databases: IDataba
         path: path.resolve(__dirname, '../../lambdas/refresher/dist'),
         type: AssetType.ARCHIVE,
     });
+    const feedViewerLambdaAsset = new TerraformAsset(scope, `${name}-feed-viewer-asset`, {
+        path: path.resolve(__dirname, '../../lambdas/feed-viewer/dist'),
+        type: AssetType.ARCHIVE,
+    });
 
     const feedCreatorLambdaArchive = new S3BucketObject(scope, `${name}-feed-creator-archive`, {
         bucket: lambdasBucket.bucket,
@@ -98,6 +105,11 @@ export function createLambdas(scope: Construct, name: string, databases: IDataba
         bucket: lambdasBucket.bucket,
         key: `refresher-lambda-${refresherLambdaAsset.assetHash}`,
         source: refresherLambdaAsset.path,
+    });
+    const feedViewerLambdaArchive = new S3BucketObject(scope, `${name}-feed-viewer-archive`, {
+        bucket: lambdasBucket.bucket,
+        key: `feed-viewer-lambda-${feedViewerLambdaAsset.assetHash}`,
+        source: feedViewerLambdaAsset.path,
     });
 
     const feedCreatorLambdaName = `${name}-feed-creator-lambda`;
@@ -133,6 +145,17 @@ export function createLambdas(scope: Construct, name: string, databases: IDataba
                 REFRESHER_LAMBDA_NAME: refresherLambda.functionName,
             }
         }],
+        timeout: 20,
+    });
+
+    const feedViewerLambdaName = `${name}-feed-viewer-lambda`;
+    const feedViewerLambda = new LambdaFunction(scope, feedViewerLambdaName, {
+        functionName: feedViewerLambdaName,
+        s3Bucket: lambdasBucket.bucket,
+        s3Key: feedViewerLambdaArchive.key,
+        handler: 'index.handler',
+        runtime: 'nodejs14.x',
+        role: lambdasRole.arn,
     });
 
     return {
@@ -142,6 +165,8 @@ export function createLambdas(scope: Construct, name: string, databases: IDataba
         sourceAdderLambdaFunctionName: sourceAdderLambda.functionName,
         refresherLambdaInvokeArn: refresherLambda.invokeArn,
         refresherLambdaFunctionName: refresherLambda.functionName,
+        feedViewerLambdaInvokeArn: feedViewerLambda.invokeArn,
+        feedViewerLambdaFunctionName: feedViewerLambda.functionName,
     };
 
 }

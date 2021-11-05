@@ -65,6 +65,99 @@ export function createApi(scope: Construct, name: string, lambdas: ILambdasCreat
 
 
 
+    // GET /feeds
+
+    const getFeedsMethod = new ApiGatewayMethod(scope, `${name}-api-get-feeds-method`, {
+        restApiId: api.id,
+        resourceId: feedsResource.id,
+        httpMethod: 'GET',
+        authorization: 'NONE',
+    });
+
+    const getFeedsIntegration = new ApiGatewayIntegration(scope, `${name}-get-feeds-integration`, {
+        restApiId: api.id,
+        resourceId: feedsResource.id,
+        httpMethod: getFeedsMethod.httpMethod,
+        integrationHttpMethod: 'POST',
+        type: 'AWS',
+        uri: lambdas.feedViewerLambdaInvokeArn,
+        timeoutMilliseconds: 29000,
+        requestTemplates: {
+            'application/json': '\n',
+        },
+    });
+
+    const getFeedsResponse = new ApiGatewayMethodResponse(scope, `${name}-get-feeds-response`, {
+        statusCode: '200',
+        restApiId: api.id,
+        resourceId: feedsResource.id,
+        httpMethod: getFeedsMethod.httpMethod,
+    });
+
+    const getFeedsIntegrationResponse = new ApiGatewayIntegrationResponse(scope, `${name}-get-feeds-integration-response`, {
+        restApiId: api.id,
+        resourceId: feedsResource.id,
+        httpMethod: getFeedsMethod.httpMethod,
+        statusCode: getFeedsResponse.statusCode,
+        responseTemplates: {
+            'application/json': '\n',
+        },
+        dependsOn: [
+            getFeedsIntegration,
+        ],
+    });
+
+    // GET /feeds/xxx
+
+    const feedsProxyResource = new ApiGatewayResource(scope, `${name}-api-feeds-proxy-resource`, {
+        restApiId: api.id,
+        parentId: feedsResource.id,
+        pathPart: '{proxy+}',
+    });
+
+    const getConcreteFeedMethod = new ApiGatewayMethod(scope, `${name}-api-get-concrete-feed-method`, {
+        restApiId: api.id,
+        resourceId: feedsProxyResource.id,
+        httpMethod: 'GET',
+        authorization: 'NONE',
+    });
+
+    const getConcreteFeedIntegration = new ApiGatewayIntegration(scope, `${name}-get-concrete-feed-integration`, {
+        restApiId: api.id,
+        resourceId: feedsProxyResource.id,
+        httpMethod: getConcreteFeedMethod.httpMethod,
+        integrationHttpMethod: 'POST',
+        type: 'AWS_PROXY',
+        uri: lambdas.feedViewerLambdaInvokeArn,
+        timeoutMilliseconds: 29000,
+        requestTemplates: {
+            'application/json': '\n',
+        },
+    });
+
+    const getConcreteFeedResponse = new ApiGatewayMethodResponse(scope, `${name}-get-concrete-feed-response`, {
+        statusCode: '200',
+        restApiId: api.id,
+        resourceId: feedsProxyResource.id,
+        httpMethod: getConcreteFeedMethod.httpMethod,
+    });
+
+    const getConcreteFeedIntegrationResponse = new ApiGatewayIntegrationResponse(scope, `${name}-get-concrete-feed-integration-response`, {
+        restApiId: api.id,
+        resourceId: feedsProxyResource.id,
+        httpMethod: getConcreteFeedMethod.httpMethod,
+        statusCode: getConcreteFeedResponse.statusCode,
+        responseTemplates: {
+            'application/json': '\n',
+        },
+        dependsOn: [
+            getConcreteFeedIntegration,
+        ],
+    });
+
+
+
+
 
     // POST ???
 
@@ -130,7 +223,10 @@ export function createApi(scope: Construct, name: string, lambdas: ILambdasCreat
             postFeedIntegrationResponse,
             tmpIntegration,
             tmpReponse,
-            tmpIntegrationResponse
+            tmpIntegrationResponse,
+            getFeedsIntegration,
+            getFeedsResponse,
+            getFeedsIntegrationResponse,
         ],
     });
 
@@ -140,6 +236,14 @@ export function createApi(scope: Construct, name: string, lambdas: ILambdasCreat
         statementId: 'AllowAPIGatewayInvoke',
         action: 'lambda:InvokeFunction',
         functionName: lambdas.feedCreatorLambdaFunctionName,
+        principal: 'apigateway.amazonaws.com',
+        sourceArn: `${api.executionArn}/*/*`,
+    });
+
+    const feedsViewerLambdaPermission = new LambdaPermission(scope, `${name}-feed-viewer-lambda-api-permission`, {
+        statementId: 'AllowAPIGatewayInvoke',
+        action: 'lambda:InvokeFunction',
+        functionName: lambdas.feedViewerLambdaFunctionName,
         principal: 'apigateway.amazonaws.com',
         sourceArn: `${api.executionArn}/*/*`,
     });
