@@ -130,6 +130,7 @@ export function createLambdas(scope: Construct, name: string, databases: IDataba
         handler: 'index.handler',
         runtime: 'nodejs14.x',
         role: lambdasRole.arn,
+        timeout: 300,
     });
 
     const sourceAdderLambdaName = `${name}-source-adder-lambda`;
