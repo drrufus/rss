@@ -26,10 +26,9 @@ export function createDatabase(scope: Construct, name: string): IDatabasesCreati
             {
                 name: 'some-index',
                 hashKey: 'ownerEmail',
-                projectionType: 'INCLUDE',
+                projectionType: 'ALL',
                 writeCapacity: 5,
                 readCapacity: 5,
-                nonKeyAttributes: ['id'],
             },
         ],
     });
