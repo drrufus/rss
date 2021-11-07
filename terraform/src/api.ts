@@ -79,11 +79,11 @@ export function createApi(scope: Construct, name: string, lambdas: ILambdasCreat
         resourceId: feedsResource.id,
         httpMethod: getFeedsMethod.httpMethod,
         integrationHttpMethod: 'POST',
-        type: 'AWS',
+        type: 'AWS_PROXY',
         uri: lambdas.feedViewerLambdaInvokeArn,
         timeoutMilliseconds: 29000,
         requestTemplates: {
-            'application/json': '\n',
+            'application/json': '{}',
         },
     });
 

@@ -13,33 +13,67 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
 
     const ownerEmail = 'test@domain.com';
 
+    const urlParam = (event as any).pathParameters?.proxy ?? null;
+
     const promise = new Promise<APIGatewayProxyResult>(async (resolve, reject) => {
 
-        const feedsQueryResponse = await ddb.query({
-            TableName: feedsTableName,
-            IndexName: 'some-index',
-            KeyConditionExpression: 'ownerEmail = :e',
-            ExpressionAttributeValues: {
-                ':e': ownerEmail,
-            },
-        }).promise();
-        const userFeeds = feedsQueryResponse.Items;
+        if (urlParam == null) {     // get list of feeds
 
-        const tmpUrls = ['https://www.reddit.com/.rss', 'http://www.metronews.ru/rss.xml?c=1300244445-1'];
+            const feedsQueryResponse = await ddb.query({
+                TableName: feedsTableName,
+                IndexName: 'some-index',
+                KeyConditionExpression: 'ownerEmail = :e',
+                ExpressionAttributeValues: {
+                    ':e': ownerEmail,
+                },
+            }).promise();
 
-        const soucesQueryResponse = await ddb.scan({
-            TableName: sourcesTableName,
-            FilterExpression: 'contains(:list, feedUrl)',
-            ExpressionAttributeValues: {
-                ':list': tmpUrls,
-            },
-        }).promise();
-        const sources = soucesQueryResponse.Items;
+            const userFeeds = feedsQueryResponse.Items;
 
-        resolve({
-            statusCode: 200,
-            body: JSON.stringify(event),
-        });
+            resolve({
+                statusCode: 200,
+                body: JSON.stringify({
+                    feeds: userFeeds,
+                }),
+            });
+
+        } else {                    // get concrete feed's content
+
+            const feedQueryResponse = await ddb.get({
+                TableName: feedsTableName,
+                Key: {
+                    id: urlParam,
+                },
+            }).promise();
+            if (!feedQueryResponse.Item) {
+                resolve({
+                    statusCode: 404,
+                    body: JSON.stringify({
+                        errorMessage: `No feed "${urlParam}" found`,
+                    }),
+                });
+            } else {
+                const sourceUrls: string[] = feedQueryResponse.Item!.sources;
+                const soucesQueryResponse = await ddb.scan({
+                    TableName: sourcesTableName,
+                    FilterExpression: 'contains(:list, feedUrl)',
+                    ExpressionAttributeValues: {
+                        ':list': sourceUrls,
+                    },
+                }).promise();
+                const sources = soucesQueryResponse.Items?.map(source => ({         // TODO: types
+                    ...source,
+                    rss: JSON.parse(source.rss),
+                }));
+                resolve({
+                    statusCode: 200,
+                    body: JSON.stringify({
+                        sources,
+                    }),
+                });
+            }
+
+        }
 
     });
 
