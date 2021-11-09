@@ -33,27 +33,37 @@ export function createDatabase(scope: Construct, name: string): IDatabasesCreati
         ],
     });
 
-    const sourcesTableName = `${name}-sources-table`;
-    const sourcesTable = new DynamodbTable(scope, sourcesTableName, {
-        name: sourcesTableName,
-        hashKey: 'feedUrl',
+    const postsTableName = `${name}-posts-table`;
+    const postsTable = new DynamodbTable(scope, postsTableName, {
+        name: postsTableName,
+        hashKey: 'id',
         billingMode: 'PROVISIONED',
         writeCapacity: 5,
         readCapacity: 5,
         attribute: [
             {
+                name: 'id',
+                type: 'S',
+            },
+            {
                 name: 'feedUrl',
                 type: 'S',
             },
         ],
-        // dependsOn: [
-        //     feedsTable,
-        // ],
+        globalSecondaryIndex: [
+            {
+                name: 'feed-url-index',
+                hashKey: 'feedUrl',
+                projectionType: 'ALL',
+                writeCapacity: 5,
+                readCapacity: 5,
+            },
+        ],
     });
 
     return {
         feedsTableArn: feedsTable.arn,
-        sourcesTableArn: sourcesTable.arn,
+        postsTableArn: postsTable.arn,
     }
 
 }

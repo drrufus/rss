@@ -2,6 +2,8 @@ import { Construct } from "constructs";
 import { ApiGatewayDeployment, ApiGatewayIntegration, ApiGatewayIntegrationResponse, ApiGatewayMethod, ApiGatewayMethodResponse, ApiGatewayResource, ApiGatewayRestApi, LambdaPermission } from "../.gen/providers/aws";
 import { ICreateApiResult } from "./types/create-api-results";
 import { ILambdasCreationResult } from "./types/lambdas-creation-result";
+import { ApigatewayCors } from "../.gen/modules/mewa/aws/apigateway-cors";
+// import { ApiGatewayEnableCors } from "../.gen/modules/squidfunk/aws/api-gateway-enable-cors";
 
 export function createApi(scope: Construct, name: string, lambdas: ILambdasCreationResult): ICreateApiResult {
 
@@ -33,7 +35,7 @@ export function createApi(scope: Construct, name: string, lambdas: ILambdasCreat
         resourceId: feedsResource.id,
         httpMethod: postFeedMethod.httpMethod,
         integrationHttpMethod: 'POST',
-        type: 'AWS',
+        type: 'AWS_PROXY',
         uri: lambdas.feedCreatorLambdaInvokeArn,
         timeoutMilliseconds: 29000,
         requestTemplates: {
@@ -157,58 +159,65 @@ export function createApi(scope: Construct, name: string, lambdas: ILambdasCreat
 
 
 
+    // POST /feeds/xxx
 
-
-    // POST ???
-
-    const tmpResource = new ApiGatewayResource(scope, `${name}-api-tmp-resource`, {
+    const addSourceMethod = new ApiGatewayMethod(scope, `${name}-api-add-source-method`, {
         restApiId: api.id,
-        parentId: api.rootResourceId,
-        pathPart: 'tmp',
-    });
-
-    const tmpMethod = new ApiGatewayMethod(scope, `${name}-api-tmp-method`, {
-        restApiId: api.id,
-        resourceId: tmpResource.id,
+        resourceId: feedsProxyResource.id,
         httpMethod: 'POST',
         authorization: 'NONE',
     });
 
-    const tmpIntegration = new ApiGatewayIntegration(scope, `${name}-tmp-integration`, {
+    const addSourceIntegration = new ApiGatewayIntegration(scope, `${name}-add-source-integration`, {
         restApiId: api.id,
-        resourceId: tmpResource.id,
-        httpMethod: tmpMethod.httpMethod,
+        resourceId: feedsProxyResource.id,
+        httpMethod: addSourceMethod.httpMethod,
         integrationHttpMethod: 'POST',
-        type: 'AWS',
+        type: 'AWS_PROXY',
         uri: lambdas.sourceAdderLambdaInvokeArn,
         timeoutMilliseconds: 29000,
-        requestTemplates: {
-            'application/json': `{
-                "postBody" : $input.body
-            }`,
-        },
     });
 
-    const tmpReponse = new ApiGatewayMethodResponse(scope, `${name}-tmp-response`, {
+    const addSourceReponse = new ApiGatewayMethodResponse(scope, `${name}-add-source-response`, {
         statusCode: '200',
         restApiId: api.id,
-        resourceId: tmpResource.id,
-        httpMethod: tmpMethod.httpMethod,
+        resourceId: feedsProxyResource.id,
+        httpMethod: addSourceMethod.httpMethod,
     });
 
-    const tmpIntegrationResponse = new ApiGatewayIntegrationResponse(scope, `${name}-tmp-integration-response`, {
+    const addSourceIntegrationResponse = new ApiGatewayIntegrationResponse(scope, `${name}-add-source-integration-response`, {
         restApiId: api.id,
-        resourceId: tmpResource.id,
-        httpMethod: tmpMethod.httpMethod,
-        statusCode: tmpReponse.statusCode,
+        resourceId: feedsProxyResource.id,
+        httpMethod: addSourceMethod.httpMethod,
+        statusCode: addSourceReponse.statusCode,
         responseTemplates: {
             'application/json': '\n',
         },
         dependsOn: [
-            tmpIntegration,
+            addSourceIntegration,
         ]
     });
 
+
+
+    new ApigatewayCors(scope, `${name}-api-feeds-cors-config`, {
+        api: api.id,
+        resource: feedsResource.id,
+        methods: [
+            getFeedsMethod.httpMethod,
+            postFeedMethod.httpMethod,
+        ],
+        // origin: '*',
+    });
+    new ApigatewayCors(scope, `${name}-api-feeds-cors-config-02`, {
+        api: api.id,
+        resource: feedsProxyResource.id,
+        methods: [
+            getConcreteFeedMethod.httpMethod,
+            addSourceMethod.httpMethod,
+        ],
+        // origin: '*',
+    });
 
 
 
@@ -221,9 +230,9 @@ export function createApi(scope: Construct, name: string, lambdas: ILambdasCreat
             postFeedIntegration,
             postFeedReponse,
             postFeedIntegrationResponse,
-            tmpIntegration,
-            tmpReponse,
-            tmpIntegrationResponse,
+            addSourceIntegration,
+            addSourceReponse,
+            addSourceIntegrationResponse,
             getFeedsIntegration,
             getFeedsResponse,
             getFeedsIntegrationResponse,

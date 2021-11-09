@@ -4,3 +4,10 @@ export interface IFeed {
     ownerEmail: string;
     sources: string[];
 }
+
+export interface ISourceChunk {
+    id: string;
+    index: number;
+    sourceUrl: string;
+    content: any[];
+}

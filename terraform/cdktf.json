@@ -5,7 +5,9 @@
   "terraformProviders": [
     "hashicorp/aws@~> 3.42"
   ],
-  "terraformModules": [],
+  "terraformModules": [
+    "mewa/apigateway-cors/aws@~> 2.0.1"
+  ],
   "context": {
     "excludeStackIdFromLogicalIds": "true",
     "allowSepCharsInLogicalIds": "true"

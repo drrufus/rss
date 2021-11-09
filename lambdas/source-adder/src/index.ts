@@ -2,65 +2,97 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDB, Lambda } from 'aws-sdk';
 import { IAddSourceRequest } from './types';
 
-type LambdaEvent = APIGatewayProxyEvent & { postBody: IAddSourceRequest };
-
 const feedsTableName = 'rss-feeds-table';
 const ddb = new DynamoDB.DocumentClient();
 const lambda = new Lambda();
 
-export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult> => {
+interface IPayload {
+    sourceUrl?: string;
+}
 
-    const body: IAddSourceRequest = event.postBody;
+const corsHeaders = {
+    'Access-Control-Allow-Headers': '*',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS'
+};
 
-    const ownerEmail = 'test@domain.com';
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult | { errorMessage?: string }> => {
 
-    const promise = new Promise<APIGatewayProxyResult>((resolve, reject) => {
+    // const ownerEmail = 'test@domain.com';
 
-        if (!body?.sourceUrl || body.sourceUrl === '' || !body.feedId || body.feedId === '') {
-            throw Error('400: invalid input');
-        }
+    const feedId = event.pathParameters?.proxy ?? '';
+    const payload: IPayload = JSON.parse(event.body!) ?? {};
+    const { sourceUrl } = payload;
 
-        const refresherLambdaName = process.env['REFRESHER_LAMBDA_NAME'];
-        if (!refresherLambdaName) {
-            throw Error('500: refresher lambda name is not specified');
-        }
+    if (!feedId || !sourceUrl) {
+        return {
+            statusCode: 400,
+            errorMessage: 'Invalid input',
+        };
+    }
 
-        ddb.update(
+    const refresherLambdaName = process.env['REFRESHER_LAMBDA_NAME'];
+    if (!refresherLambdaName) {
+        return {
+            statusCode: 500,
+            errorMessage: 'Configuration error: refresher lambda name is not specified',
+        };
+    }
+
+    try {
+        const res = await ddb.update(
             {
                 TableName: feedsTableName,
                 Key: {
-                    'id': body.feedId,
+                    'id': feedId,
                 },
                 UpdateExpression: 'SET sources = list_append(sources, :l)',
                 ConditionExpression: 'not contains (sources, :i)',
                 ExpressionAttributeValues: {
-                    ':i': body.sourceUrl,
-                    ':l': [body.sourceUrl]
-                }
-            },
-            async (err, data) => {
-                if (err) {
-                    if (err.code === 'ConditionalCheckFailedException') {
-                        throw Error('400: some condition failed');
-                    } else {
-                        throw Error(`500: update error (${JSON.stringify(err)})`);
-                    }
-                } else {
-                    await lambda.invoke({
-                        FunctionName: refresherLambdaName,
-                        InvocationType: 'RequestResponse',
-                        LogType: 'Tail',
-                        Payload: '{}',
-                    }).promise();
-                    // TODO: check lambda invocation response code
-                    resolve({
-                        statusCode: 200,
-                        body: JSON.stringify(event),
-                    });
+                    ':i': sourceUrl,
+                    ':l': [sourceUrl]
                 }
             }
-        );
-    });
+        ).promise();
 
-    return promise;
+        const lambdaCallReponse = await lambda.invoke({
+            FunctionName: refresherLambdaName,
+            InvocationType: 'RequestResponse',
+            LogType: 'Tail',
+            Payload: JSON.stringify({
+                sourceUrl,
+            }),
+        }).promise();
+        
+        if (lambdaCallReponse.StatusCode !== 200) {
+            return {
+                statusCode: 500,
+                errorMessage: 'Refresher-Lambda returned code ' + lambdaCallReponse.StatusCode,
+            };
+        }
+
+        return {
+            statusCode: 200,
+            headers: corsHeaders,
+            body: JSON.stringify({
+                feedId,
+                sourceUrl,
+                lambdaResponse: lambdaCallReponse.Payload,  // TODO: tmp stuff
+            }),
+        };
+    } catch (err: any) {
+        if (err.code === 'ConditionalCheckFailedException') {
+            return {
+                statusCode: 400,
+                errorMessage: 'Some condition failed',
+            };
+        } else {
+            return {
+                statusCode: 500,
+                errorMessage: `Update error (${JSON.stringify(err)})`,
+            };
+        }
+    }
+
 }

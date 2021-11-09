@@ -4,8 +4,15 @@ import { DynamoDB } from 'aws-sdk';
 type LambdaEvent = APIGatewayProxyEvent;
 
 const ddb = new DynamoDB.DocumentClient();
-const sourcesTableName = 'rss-sources-table';
+const sourcesTableName = 'rss-posts-table';
 const feedsTableName = 'rss-feeds-table';
+
+const corsHeaders = {
+    'Access-Control-Allow-Headers': '*',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS'
+};
 
 export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult> => {
 
@@ -32,6 +39,7 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
 
             resolve({
                 statusCode: 200,
+                headers: corsHeaders,
                 body: JSON.stringify({
                     feeds: userFeeds,
                 }),
@@ -53,7 +61,8 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
                     }),
                 });
             } else {
-                const sourceUrls: string[] = feedQueryResponse.Item!.sources;
+                const feed = feedQueryResponse.Item!;
+                const sourceUrls: string[] = feed.sources;
                 const soucesQueryResponse = await ddb.scan({
                     TableName: sourcesTableName,
                     FilterExpression: 'contains(:list, feedUrl)',
@@ -61,14 +70,20 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
                         ':list': sourceUrls,
                     },
                 }).promise();
-                const sources = soucesQueryResponse.Items?.map(source => ({         // TODO: types
-                    ...source,
-                    rss: JSON.parse(source.rss),
+                const chunks = soucesQueryResponse.Items?.map(chunk => ({         // TODO: types
+                    id: chunk.id,
+                    sourceUrl: chunk.feedUrl,
+                    items: JSON.parse(chunk.content),
                 }));
                 resolve({
                     statusCode: 200,
+                    headers: corsHeaders,
                     body: JSON.stringify({
-                        sources,
+                        id: feed.id,
+                        feedName: feed.name,
+                        ownerEmail: feed.ownerEmail,
+                        sources: sourceUrls,
+                        chunks,
                     }),
                 });
             }

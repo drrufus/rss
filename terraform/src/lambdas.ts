@@ -33,7 +33,7 @@ export function createLambdas(scope: Construct, name: string, databases: IDataba
                         "Sid": "",
                         "Effect": "Allow",
                         "Action": "dynamodb:*",
-                        "Resource": "${databases.sourcesTableArn}"
+                        "Resource": "${databases.postsTableArn}"
                     },
                     {
                         "Sid": "",
@@ -146,7 +146,7 @@ export function createLambdas(scope: Construct, name: string, databases: IDataba
                 REFRESHER_LAMBDA_NAME: refresherLambda.functionName,
             }
         }],
-        timeout: 20,
+        timeout: 29,
     });
 
     const feedViewerLambdaName = `${name}-feed-viewer-lambda`;
