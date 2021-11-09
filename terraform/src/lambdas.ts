@@ -33,7 +33,10 @@ export function createLambdas(scope: Construct, name: string, databases: IDataba
                         "Sid": "",
                         "Effect": "Allow",
                         "Action": "dynamodb:*",
-                        "Resource": "${databases.postsTableArn}"
+                        "Resource": [
+                            "${databases.postsTableArn}",
+                            "${databases.postsTableArn}/index/*"
+                        ]
                     },
                     {
                         "Sid": "",

@@ -19,13 +19,28 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
     const ddb = new DynamoDB.DocumentClient();
     const sourceUrl = event.sourceUrl;
 
-    const feedsResponse = await ddb.scan({ TableName: feedsTableName }).promise();
-    const feeds = feedsResponse.Items! as IFeed[];
-    const sources = new Set(feeds.flatMap(f => f.sources));
+    let sources: string[] | null = sourceUrl ? [sourceUrl] : null;
+    let feeds: IFeed[] | null = null;
+    if (!sourceUrl) {
+        const feedsResponse = await ddb.scan({ TableName: feedsTableName }).promise();
+        feeds = feedsResponse.Items! as IFeed[];
+        sources = Array.from(new Set(feeds!.flatMap(f => f.sources)));
+    }
 
     // clear old data
 
-    const existingChunksResponse = await ddb.scan({ TableName: postsTableName }).promise();
+    const existingChunksResponse = sourceUrl
+        ? await ddb.query({
+            TableName: postsTableName,
+            IndexName: 'feed-url-index',
+            KeyConditionExpression: 'feedUrl = :url',
+            ExpressionAttributeValues: {
+                ':url': sourceUrl,
+            },
+        }).promise()
+        : await ddb.scan({
+            TableName: postsTableName,
+        }).promise();
     const existingChunksIds = existingChunksResponse.Items!.map(item => item.id);
     console.log('existing chunks count: ' + existingChunksIds.length);
     const idsBatches: (string[])[] = [];
@@ -55,7 +70,7 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
 
     const chunks: ISourceChunk[] = [];
 
-    for (const sourceUrl of Array.from(sources)) {
+    for (const sourceUrl of sources!) {
         const rss = await parser.parseURL(sourceUrl);
         const rssItems = rss.items;
         console.log(`for source "${sourceUrl}" loaded items: ${rssItems.length}`);
@@ -92,7 +107,6 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
     }
 
     console.log('total chunks: ' + chunks.length);
-    // chunks.forEach(chunk => console.log('size: ' + JSON.stringify(chunk).length));
 
     const batches: (ISourceChunk[])[] = [];
     chunks.forEach((chunk, idx) => {
@@ -124,7 +138,6 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
         statusCode: 200,
         body: JSON.stringify({
             chunksAdded: chunks.length,
-            eventDump: event,               // TODO: tmp stuff
         }),
     };
 }

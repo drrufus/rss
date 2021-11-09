@@ -41,7 +41,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     }
 
     try {
-        const res = await ddb.update(
+        await ddb.update(
             {
                 TableName: feedsTableName,
                 Key: {
@@ -78,7 +78,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             body: JSON.stringify({
                 feedId,
                 sourceUrl,
-                lambdaResponse: lambdaCallReponse.Payload,  // TODO: tmp stuff
             }),
         };
     } catch (err: any) {
