@@ -25,6 +25,29 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const payload: IPayload = JSON.parse(event.body!) ?? {};
     const { sourceUrl } = payload;
 
+    const ownerEmail = event.requestContext.authorizer!.email;
+    const ownerId = event.requestContext.authorizer!.user_id;
+
+    if (!ownerEmail || !ownerId) {
+        return {
+            statusCode: 500,
+            headers: corsHeaders,
+            body: JSON.stringify({
+                errorMessage: 'Missing authorizer data',
+            }),
+        };
+    }
+
+    if (!feedId.startsWith(ownerEmail.match(/^[^@]+/)![0])) {
+        return {
+            statusCode: 403,
+            headers: corsHeaders,
+            body: JSON.stringify({
+                errorMessage: 'An attempt to modify feed of other user',
+            }),
+        }
+    }
+
     if (!feedId || !sourceUrl) {
         return {
             statusCode: 400,

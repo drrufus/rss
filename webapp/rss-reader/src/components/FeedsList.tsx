@@ -24,7 +24,7 @@ export const FeedsList = (props: IProps) => {
 
     const updateList = async () => {
         console.log(`Retrieving feeds...`);
-        const response = await axios.get(`${config.host}/feeds`);
+        const response = await axios.get(`${config.host}/feeds?owner=${auth?.profileObj.email}`);
         setFeeds(response.data.feeds);
     };
 

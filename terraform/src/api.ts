@@ -49,9 +49,7 @@ export function createApi(scope: Construct, name: string, lambdas: ILambdasCreat
         uri: lambdas.feedCreatorLambdaInvokeArn,
         timeoutMilliseconds: 29000,
         requestTemplates: {
-            'application/json': `{
-                "postBody" : $input.body
-            }`,
+            'application/json': `{}`,
         },
     });
 

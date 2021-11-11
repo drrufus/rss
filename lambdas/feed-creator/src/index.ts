@@ -18,7 +18,18 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
     const ddb = new DynamoDB.DocumentClient();
     const body: ICreateFeedRequest = JSON.parse(event.body!);
 
-    const ownerEmail = 'test@domain.com';
+    const ownerEmail = event.requestContext.authorizer!.email;
+    const ownerId = event.requestContext.authorizer!.user_id;
+    if (!ownerEmail || !ownerId) {
+        return {
+            statusCode: 500,
+            headers: corsHeaders,
+            body: JSON.stringify({
+                errorMessage: 'Missing authorizer data',
+            }),
+        };
+    }
+
     const ownerName = ownerEmail.match(/^[^@]+/)![0];
 
     if (!body?.name || body.name === '' || !body.name.match(/^[a-zA-Z0-9-]+$/)) {
@@ -47,7 +58,7 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
         return {
             statusCode: 200,
             headers: corsHeaders,
-            body: JSON.stringify(event),
+            body: JSON.stringify(event),    // TODO: returning event only for debug
         };
 
     } catch (err: any) {
