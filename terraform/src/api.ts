@@ -20,7 +20,7 @@ export function createApi(scope: Construct, name: string, lambdas: ILambdasCreat
         name: `${name}-gw-google-authorizer`,
         restApiId: api.id,
         authorizerUri: lambdas.authorizerLambdaInvokeArn,
-        identitySource: 'method.request.header.authorizationToken',
+        identitySource: 'method.request.header.Authorization',
     });
     
 

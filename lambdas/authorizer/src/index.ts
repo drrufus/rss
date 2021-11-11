@@ -4,7 +4,7 @@ import axios from 'axios';
 export const handler = async (event: any, context: any) => {
     console.log('input:');
     console.log(event);
-    const token = event.authorizationToken;
+    const token = event.authorizationToken.replace('Bearer ', '');
     console.log('using token: ' + token);
     let googleAuthRes;
     try {
@@ -29,7 +29,7 @@ export const handler = async (event: any, context: any) => {
     );
 };
 
-const generatePolicy = (principalId: any, effect: any, resource: any, context = {}) => {
+const generatePolicy = (principalId: string, effect: string, resource: string, context = {}) => {
     const authResponse: any = { 
         principalId,
         context,
@@ -42,7 +42,7 @@ const generatePolicy = (principalId: any, effect: any, resource: any, context = 
                 {
                     Action: "execute-api:Invoke",
                     Effect: effect,
-                    Resource: "*",
+                    Resource: "*", //resource
                 }
             ]
         };
