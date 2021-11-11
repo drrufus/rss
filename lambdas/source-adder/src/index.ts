@@ -28,6 +28,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     if (!feedId || !sourceUrl) {
         return {
             statusCode: 400,
+            headers: corsHeaders,
             body: JSON.stringify({
                 errorMessage: 'Invalid input',
             }),
@@ -38,6 +39,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     if (!refresherLambdaName) {
         return {
             statusCode: 500,
+            headers: corsHeaders,
             body: JSON.stringify({
                 errorMessage: 'Configuration error: refresher lambda name is not specified',
             }),
@@ -64,6 +66,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             case 'ValidationException': {
                 return {
                     statusCode: 400,
+                    headers: corsHeaders,
                     body: JSON.stringify({
                         errorMessage: 'An attempt to modify feed that doesn\'t exist',
                     }),
@@ -72,6 +75,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             case 'ConditionalCheckFailedException': {
                 return {
                     statusCode: 400,
+                    headers: corsHeaders,
                     body: JSON.stringify({
                         errorMessage: 'Some condition failed',
                     }),
@@ -80,6 +84,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             default: {
                 return {
                     statusCode: 500,
+                    headers: corsHeaders,
                     body: JSON.stringify({
                         errorMessage: `Update error (${JSON.stringify(err)})`,
                     }),
@@ -101,6 +106,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         if (lambdaCallReponse.StatusCode !== 200) {
             return {
                 statusCode: 500,
+                headers: corsHeaders,
                 body: JSON.stringify({
                     errorMessage: 'Refresher-Lambda returned code ' + lambdaCallReponse.StatusCode,
                 }),
@@ -109,6 +115,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     } catch (err: any) {
         return {
             statusCode: 500,
+            headers: corsHeaders,
             body: JSON.stringify({
                 errorMessage: 'Unknown lambda call error: ' + JSON.stringify(err),
             }),

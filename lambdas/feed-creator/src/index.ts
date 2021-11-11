@@ -24,6 +24,7 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
     if (!body?.name || body.name === '' || !body.name.match(/^[a-zA-Z0-9-]+$/)) {
         return {
             statusCode: 400,
+            headers: corsHeaders,
             body: JSON.stringify({
                 errorMessage: 'Invalid input',
             }),
@@ -53,6 +54,7 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
         if (err.code === 'ConditionalCheckFailedException') {
             return {
                 statusCode: 400,
+                headers: corsHeaders,
                 body: JSON.stringify({
                     errorMessage: 'Feed with this name already exists',
                 }),
@@ -60,6 +62,7 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
         } else {
             return {
                 statusCode: 500,
+                headers: corsHeaders,
                 body: JSON.stringify({
                     errorMessage: `Insertion error (${JSON.stringify(err)})`,
                 }),

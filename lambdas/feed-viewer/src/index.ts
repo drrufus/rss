@@ -56,6 +56,7 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
             if (!feedQueryResponse.Item) {
                 resolve({
                     statusCode: 404,
+                    headers: corsHeaders,
                     body: JSON.stringify({
                         errorMessage: `No feed "${urlParam}" found`,
                     }),
