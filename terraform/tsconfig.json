@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "outDir": "dist",
     "alwaysStrict": true,
     "charset": "utf8",
     "declaration": true,
@@ -30,6 +31,7 @@
   ],
   "exclude": [
     "node_modules",
-    "cdktf.out"
+    "cdktf.out",
+    "dist"
   ]
 }

@@ -78,19 +78,19 @@ export function createLambdas(scope: Construct, name: string, databases: IDataba
     });
 
     const feedCreatorLambdaAsset = new TerraformAsset(scope, `${name}-feed-creator-asset`, {
-        path: path.resolve(__dirname, '../../lambdas/feed-creator/dist'),
+        path: path.resolve(__dirname, '../../../lambdas/feed-creator/dist'),
         type: AssetType.ARCHIVE,
     });
     const sourceAdderLambdaAsset = new TerraformAsset(scope, `${name}-source-adder-asset`, {
-        path: path.resolve(__dirname, '../../lambdas/source-adder/dist'),
+        path: path.resolve(__dirname, '../../../lambdas/source-adder/dist'),
         type: AssetType.ARCHIVE,
     });
     const refresherLambdaAsset = new TerraformAsset(scope, `${name}-refresher-asset`, {
-        path: path.resolve(__dirname, '../../lambdas/refresher/dist'),
+        path: path.resolve(__dirname, '../../../lambdas/refresher/dist'),
         type: AssetType.ARCHIVE,
     });
     const feedViewerLambdaAsset = new TerraformAsset(scope, `${name}-feed-viewer-asset`, {
-        path: path.resolve(__dirname, '../../lambdas/feed-viewer/dist'),
+        path: path.resolve(__dirname, '../../../lambdas/feed-viewer/dist'),
         type: AssetType.ARCHIVE,
     });
 
