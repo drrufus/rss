@@ -17,7 +17,7 @@ const corsHeaders = {
     'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS'
 };
 
-export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult | { errorMessage?: string }> => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
 
     // const ownerEmail = 'test@domain.com';
 
@@ -28,7 +28,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     if (!feedId || !sourceUrl) {
         return {
             statusCode: 400,
-            errorMessage: 'Invalid input',
+            body: JSON.stringify({
+                errorMessage: 'Invalid input',
+            }),
         };
     }
 
@@ -36,7 +38,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     if (!refresherLambdaName) {
         return {
             statusCode: 500,
-            errorMessage: 'Configuration error: refresher lambda name is not specified',
+            body: JSON.stringify({
+                errorMessage: 'Configuration error: refresher lambda name is not specified',
+            }),
         };
     }
 
@@ -55,7 +59,36 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 }
             }
         ).promise();
+    } catch (err: any) {
+        switch (err.code) {
+            case 'ValidationException': {
+                return {
+                    statusCode: 400,
+                    body: JSON.stringify({
+                        errorMessage: 'An attempt to modify feed that doesn\'t exist',
+                    }),
+                };
+            }
+            case 'ConditionalCheckFailedException': {
+                return {
+                    statusCode: 400,
+                    body: JSON.stringify({
+                        errorMessage: 'Some condition failed',
+                    }),
+                };
+            }
+            default: {
+                return {
+                    statusCode: 500,
+                    body: JSON.stringify({
+                        errorMessage: `Update error (${JSON.stringify(err)})`,
+                    }),
+                };
+            }
+        }
+    }
 
+    try {
         const lambdaCallReponse = await lambda.invoke({
             FunctionName: refresherLambdaName,
             InvocationType: 'RequestResponse',
@@ -68,30 +101,28 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         if (lambdaCallReponse.StatusCode !== 200) {
             return {
                 statusCode: 500,
-                errorMessage: 'Refresher-Lambda returned code ' + lambdaCallReponse.StatusCode,
+                body: JSON.stringify({
+                    errorMessage: 'Refresher-Lambda returned code ' + lambdaCallReponse.StatusCode,
+                }),
             };
         }
-
+    } catch (err: any) {
         return {
-            statusCode: 200,
-            headers: corsHeaders,
+            statusCode: 500,
             body: JSON.stringify({
-                feedId,
-                sourceUrl,
+                errorMessage: 'Unknown lambda call error: ' + JSON.stringify(err),
             }),
         };
-    } catch (err: any) {
-        if (err.code === 'ConditionalCheckFailedException') {
-            return {
-                statusCode: 400,
-                errorMessage: 'Some condition failed',
-            };
-        } else {
-            return {
-                statusCode: 500,
-                errorMessage: `Update error (${JSON.stringify(err)})`,
-            };
-        }
     }
+
+    return {
+        statusCode: 200,
+        headers: corsHeaders,
+        body: JSON.stringify({
+            feedId,
+            sourceUrl,
+        }),
+    };
+    
 
 }
