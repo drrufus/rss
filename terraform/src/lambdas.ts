@@ -93,6 +93,10 @@ export function createLambdas(scope: Construct, name: string, databases: IDataba
         path: path.resolve(__dirname, '../../../lambdas/feed-viewer/dist'),
         type: AssetType.ARCHIVE,
     });
+    const authorizerLambdaAsset = new TerraformAsset(scope, `${name}-authorizer-asset`, {
+        path: path.resolve(__dirname, '../../../lambdas/authorizer/dist'),
+        type: AssetType.ARCHIVE,
+    });
 
     const feedCreatorLambdaArchive = new S3BucketObject(scope, `${name}-feed-creator-archive`, {
         bucket: lambdasBucket.bucket,
@@ -113,6 +117,11 @@ export function createLambdas(scope: Construct, name: string, databases: IDataba
         bucket: lambdasBucket.bucket,
         key: `feed-viewer-lambda-${feedViewerLambdaAsset.assetHash}`,
         source: feedViewerLambdaAsset.path,
+    });
+    const authorizerLambdaArchive = new S3BucketObject(scope, `${name}-authorizer-archive`, {
+        bucket: lambdasBucket.bucket,
+        key: `authorizer-lambda-${authorizerLambdaAsset.assetHash}`,
+        source: authorizerLambdaAsset.path,
     });
 
     const feedCreatorLambdaName = `${name}-feed-creator-lambda`;
@@ -162,7 +171,19 @@ export function createLambdas(scope: Construct, name: string, databases: IDataba
         role: lambdasRole.arn,
     });
 
+    const authorizerLambdaName = `${name}-authorizer-lambda`;
+    const authorizerLambda = new LambdaFunction(scope, authorizerLambdaName, {
+        functionName: authorizerLambdaName,
+        s3Bucket: lambdasBucket.bucket,
+        s3Key: authorizerLambdaArchive.key,
+        handler: 'index.handler',
+        runtime: 'nodejs14.x',
+        role: lambdasRole.arn,
+    });
+
     return {
+        authorizerLambdaInvokeArn: authorizerLambda.invokeArn,
+        authorizerLambdaFunctionName: authorizerLambda.functionName,
         feedCreatorLambdaInvokeArn: feedCreatorLambda.invokeArn,
         feedCreatorLambdaFunctionName: feedCreatorLambda.functionName,
         sourceAdderLambdaInvokeArn: sourceAdderLambda.invokeArn,

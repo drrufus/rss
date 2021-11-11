@@ -1,0 +1,16 @@
+{
+  "name": "authorizer",
+  "version": "1.0.0",
+  "scripts": {
+    "compile": "tsc"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.76",
+    "aws-sdk": "^2.1018.0",
+    "typescript": "^4.3.2"
+  },
+  "dependencies": {
+    "axios": "^0.24.0"
+  }
+}

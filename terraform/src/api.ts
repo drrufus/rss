@@ -1,5 +1,5 @@
 import { Construct } from "constructs";
-import { ApiGatewayDeployment, ApiGatewayIntegration, ApiGatewayIntegrationResponse, ApiGatewayMethod, ApiGatewayMethodResponse, ApiGatewayResource, ApiGatewayRestApi, LambdaPermission } from "../.gen/providers/aws";
+import { ApiGatewayDeployment, ApiGatewayIntegration, ApiGatewayIntegrationResponse, ApiGatewayMethod, ApiGatewayMethodResponse, ApiGatewayResource, ApiGatewayRestApi, LambdaPermission, ApiGatewayAuthorizer } from "../.gen/providers/aws";
 import { ICreateApiResult } from "./types/create-api-results";
 import { ILambdasCreationResult } from "./types/lambdas-creation-result";
 import { ApigatewayCors } from "../.gen/modules/mewa/aws/apigateway-cors";
@@ -13,6 +13,15 @@ export function createApi(scope: Construct, name: string, lambdas: ILambdasCreat
         description: '',
     });
 
+
+    // authorizer
+
+    const authorizer = new ApiGatewayAuthorizer(scope, `${name}-gw-google-authorizer`, {
+        name: `${name}-gw-google-authorizer`,
+        restApiId: api.id,
+        authorizerUri: lambdas.authorizerLambdaInvokeArn,
+        identitySource: 'method.request.header.authorizationToken',
+    });
     
 
     // POST /feeds
@@ -27,7 +36,8 @@ export function createApi(scope: Construct, name: string, lambdas: ILambdasCreat
         restApiId: api.id,
         resourceId: feedsResource.id,
         httpMethod: 'POST',
-        authorization: 'NONE',
+        authorization: 'CUSTOM',
+        authorizerId: authorizer.id,
     });
 
     const postFeedIntegration = new ApiGatewayIntegration(scope, `${name}-post-feed-integration`, {
@@ -165,7 +175,8 @@ export function createApi(scope: Construct, name: string, lambdas: ILambdasCreat
         restApiId: api.id,
         resourceId: feedsProxyResource.id,
         httpMethod: 'POST',
-        authorization: 'NONE',
+        authorization: 'CUSTOM',
+        authorizerId: authorizer.id,
     });
 
     const addSourceIntegration = new ApiGatewayIntegration(scope, `${name}-add-source-integration`, {
@@ -261,6 +272,14 @@ export function createApi(scope: Construct, name: string, lambdas: ILambdasCreat
         statementId: 'AllowAPIGatewayInvoke',
         action: 'lambda:InvokeFunction',
         functionName: lambdas.sourceAdderLambdaFunctionName,
+        principal: 'apigateway.amazonaws.com',
+        sourceArn: `${api.executionArn}/*/*`,
+    });
+
+    const authorizerLambdaPermission = new LambdaPermission(scope, `${name}-authorizer-lambda-api-permission`, {
+        statementId: 'AllowAPIGatewayInvoke',
+        action: 'lambda:InvokeFunction',
+        functionName: lambdas.authorizerLambdaFunctionName,
         principal: 'apigateway.amazonaws.com',
         sourceArn: `${api.executionArn}/*/*`,
     });

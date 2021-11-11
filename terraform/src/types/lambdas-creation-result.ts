@@ -1,5 +1,8 @@
 export interface ILambdasCreationResult {
 
+    authorizerLambdaInvokeArn: string;
+    authorizerLambdaFunctionName: string;
+
     feedCreatorLambdaInvokeArn: string;
     feedCreatorLambdaFunctionName: string;
 
