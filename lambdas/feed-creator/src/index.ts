@@ -21,40 +21,50 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
     const ownerEmail = 'test@domain.com';
     const ownerName = ownerEmail.match(/^[^@]+/)![0];
 
-    const promise = new Promise<APIGatewayProxyResult>((resolve, reject) => {
+    if (!body?.name || body.name === '' || !body.name.match(/^[a-zA-Z0-9-]+$/)) {
+        return {
+            statusCode: 400,
+            body: JSON.stringify({
+                errorMessage: 'Invalid input',
+            }),
+        };
+    }
 
-        if (!body?.name || body.name === '' || !body.name.match(/^[a-zA-Z0-9-]+$/)) {
-            throw Error('400: invalid input');  // TODO: errors mapping
-        }
+    try {
 
-        ddb.put(
-            {
-                TableName: feedsTableName,
-                Item: {
-                    id: `${ownerName}_${body.name}`,
-                    ownerEmail,
-                    name: body.name,
-                    sources: [],
-                },
-                ConditionExpression: 'attribute_not_exists(id)',
+        await ddb.put({
+            TableName: feedsTableName,
+            Item: {
+                id: `${ownerName}_${body.name}`,
+                ownerEmail,
+                name: body.name,
+                sources: [],
             },
-            (err, data) => {
-                if (err) {
-                    if (err.code === 'ConditionalCheckFailedException') {
-                        throw Error('400: feed with this name already exists');         // TODO: errors mapping
-                    } else {
-                        throw Error(`500: insertion error (${JSON.stringify(err)})`);   // TODO: errors mapping
-                    }
-                } else {
-                    resolve({
-                        statusCode: 200,
-                        headers: corsHeaders,
-                        body: JSON.stringify(event),
-                    });
-                }
-            }
-        );
-    });
+            ConditionExpression: 'attribute_not_exists(id)',
+        }).promise();
 
-    return promise;
+        return {
+            statusCode: 200,
+            headers: corsHeaders,
+            body: JSON.stringify(event),
+        };
+
+    } catch (err: any) {
+        if (err.code === 'ConditionalCheckFailedException') {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({
+                    errorMessage: 'Feed with this name already exists',
+                }),
+            };
+        } else {
+            return {
+                statusCode: 500,
+                body: JSON.stringify({
+                    errorMessage: `Insertion error (${JSON.stringify(err)})`,
+                }),
+            };
+        }
+    }
+
 }
