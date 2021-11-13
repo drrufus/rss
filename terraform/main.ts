@@ -5,6 +5,7 @@ import { createDatabase } from './src/db';
 import { createLambdas } from './src/lambdas';
 import { createApi } from './src/api';
 import { createUiEntities } from './src/ui';
+import { createEvents } from './src/events';
 
 class MyStack extends TerraformStack {
     constructor(scope: Construct, name: string) {
@@ -20,6 +21,7 @@ class MyStack extends TerraformStack {
         const lambdas = createLambdas(this, name, databases);
         const ui = createUiEntities(this, name);
         const api = createApi(this, name, lambdas, ui);
+        createEvents(this, name, lambdas);
 
     }
 }

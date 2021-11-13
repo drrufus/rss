@@ -190,6 +190,7 @@ export function createLambdas(scope: Construct, name: string, databases: IDataba
         sourceAdderLambdaFunctionName: sourceAdderLambda.functionName,
         refresherLambdaInvokeArn: refresherLambda.invokeArn,
         refresherLambdaFunctionName: refresherLambda.functionName,
+        refresherLambdaArn: refresherLambda.arn,
         feedViewerLambdaInvokeArn: feedViewerLambda.invokeArn,
         feedViewerLambdaFunctionName: feedViewerLambda.functionName,
     };

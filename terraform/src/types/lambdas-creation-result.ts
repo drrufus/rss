@@ -11,6 +11,7 @@ export interface ILambdasCreationResult {
 
     refresherLambdaInvokeArn: string;
     refresherLambdaFunctionName: string;
+    refresherLambdaArn: string;
 
     feedViewerLambdaInvokeArn: string;
     feedViewerLambdaFunctionName: string;
