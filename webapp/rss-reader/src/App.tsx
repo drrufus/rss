@@ -5,6 +5,9 @@ import styled from 'styled-components';
 import { FeedsList } from './components/FeedsList';
 import { FeedContent } from './components/FeedContent';
 import { Layout } from 'antd';
+import { HeaderPanel } from './components/HeaderPanel';
+import { GoogleLoginResponse } from 'react-google-login';
+import { FireOutlined } from '@ant-design/icons';
 
 const { Content, Header, Sider } = Layout;
 
@@ -22,19 +25,25 @@ const Logo = styled.h1`
     line-height: 64px;
     box-sizing: border-box;
     text-align: center;
-    text-decoration: underline;
 `;
 
-const initialState: IAppState = {
+interface IState {
+    auth: GoogleLoginResponse | null;
+    selectedFeedId: string | null;
+}
+
+export const AppContext = React.createContext<IAppState>({
     auth: null,
     selectedFeedId: null,
-};
-
-export const AppContext = React.createContext(initialState);
+    logout: () => {},
+});
 
 function App() {
 
-    const [state, setState] = useState(initialState);
+    const [state, setState] = useState<IState>({
+        auth: null,
+        selectedFeedId: null,
+    });
     const [siderCollapsed, setSiderCollapseState] = useState(false);
     // const [auth, setAuth] = useState(null as GoogleLoginResponse | null);
 
@@ -44,24 +53,22 @@ function App() {
         setState(_state => ({ ..._state, auth: null }));
     };
 
-    return <AppContext.Provider value={state}>
+    return <AppContext.Provider value={{ ...state, logout }}>
 
         <Layout style={{ height: '100vh' }}>
             <Sider collapsible collapsed={siderCollapsed} onCollapse={setSiderCollapseState}>
-                <Logo>💬 RSS</Logo>
+                <Logo><FireOutlined /> RSS</Logo>
                 <FeedsList onFeedSelected={(selectedFeedId) => setState(_state => ({ ...state, selectedFeedId }))} />
             </Sider>
             <Layout>
-                <Header style={{ padding: 0 }}>
-                    
-                </Header>
+                <HeaderPanel />
                 <Content style={{ margin: '0 16px', overflow: 'auto' }}>
                     <FeedContent />
                 </Content>
             </Layout>
         </Layout>
 
-        {(state.auth === null) && <AuthModal onAuthenticated={(auth) => setState(_state => ({ ..._state, auth }))} />}
+        <AuthModal open={state.auth === null} onAuthenticated={(auth) => setState(_state => ({ ..._state, auth }))} />
 
     </AppContext.Provider>;
 

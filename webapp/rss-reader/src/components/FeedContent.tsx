@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { AppContext } from '../App';
 import axios from 'axios';
 import { config } from '../config';
@@ -36,6 +36,8 @@ export const FeedContent = (props: IProps) => {
     const state = useContext(AppContext);
     const { auth, selectedFeedId } = state;
 
+    const containerRef = useRef(null);
+
     const [pagination, setPagination] = useState({
         page: 0,
         pageSize: 10,
@@ -47,7 +49,10 @@ export const FeedContent = (props: IProps) => {
 
     const postsCount = feed?.chunks.reduce((acc, curr) => acc + curr.items.length, 0);
     const pages: (IPost[])[] = [];
-    feed?.chunks.flatMap(s => s.items)?.forEach((post, idx) => {
+    feed?.chunks
+        .flatMap(s => s.items)
+        ?.sort((item1, item2) => (item2.isoDate ? (new Date(item2.isoDate)).getTime() : 0) - (item1.isoDate ? (new Date(item1.isoDate)).getTime() : 0))
+        .forEach((post, idx) => {
         if (idx % pagination.pageSize === 0) {
             pages.push([]);
         }
@@ -77,6 +82,8 @@ export const FeedContent = (props: IProps) => {
             ..._pagination,
             page: page - 1,
         }));
+        const container: Element = containerRef.current!
+        container.scrollIntoView({ block: 'start', behavior: 'smooth' });
     };
 
     const onPageSizeChanged = (currentPage: number, size: number) => {
@@ -92,7 +99,7 @@ export const FeedContent = (props: IProps) => {
     if (loading) {
         return <Spin tip="Loading..." spinning={true} className="spinner-container"></Spin>;
     } else if (feed) {
-        return <>
+        return <div ref={containerRef}>
             <ContentHeaderContainer>
                 <h2>Feed "{feed!.feedName}"</h2>
                 <Button type="primary" onClick={() => setEditModalOpenState(true)}>Edit feed</Button>
@@ -116,7 +123,7 @@ export const FeedContent = (props: IProps) => {
                     <Result icon={<SmileOutlined />} title="Nothing to show here" />
                 </NoContentPlaceholder>
             }
-        </>;
+        </div>;
     } else {
         return <NoContentPlaceholder>
             <Result icon={<SmileOutlined />} title="Choose something pls" />

@@ -3,4 +3,5 @@ export interface IFeedDescriptor {
     name: string;
     ownerEmail: string;
     sources: string[];
+    icon?: string;
 }

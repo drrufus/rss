@@ -1,7 +1,9 @@
 import React from 'react';
 import styled from 'styled-components';
 import { IPost } from '../types/post';
-import { Card as AntCard } from 'antd';
+import { Card as AntCard, Divider } from 'antd';
+
+const { Meta } = AntCard;
 
 interface IProps {
     post: IPost;
@@ -27,13 +29,15 @@ const Card = styled(AntCard)`
 
 export const Post = (props: IProps) => {
 
-    const { content, title, link } = props.post;
+    const { content, title, link, isoDate } = props.post;
 
     return <Card
         title={title ?? '[no title]'}
         extra={link ? <a href={link} target="_blank">open</a> : null}
     >
         {content && <CustomContentContainer dangerouslySetInnerHTML={{ __html: content }}></CustomContentContainer>}
+        <Divider style={{ margin: '2px 0 16px' }} />
+        <Meta description={isoDate ? (new Date(isoDate)).toLocaleString() : '<unknown>'}></Meta>
     </Card>;
 
 };

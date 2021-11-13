@@ -4,9 +4,10 @@ import { IFeedDescriptor } from '../types/feed-descriptor';
 import { config } from '../config';
 import styled from 'styled-components';
 import { AppContext } from '../App';
-import { Button, Menu } from 'antd';
+import { Button, Menu, Spin } from 'antd';
 import { DesktopOutlined, PlusOutlined } from '@ant-design/icons';
 import { NewFeedModal } from './NewFeedModal';
+import { resolveIcon } from '../misc/utils';
 
 const { SubMenu } = Menu;
 
@@ -21,11 +22,14 @@ export const FeedsList = (props: IProps) => {
     const { onFeedSelected } = props;
     const [feeds, setFeeds] = useState(null as IFeedDescriptor[] | null);
     const [newFeedModalOpen, setNewFeedOpenState] = useState(false);
+    const [loading, setLoadingState] = useState(false);
 
     const updateList = async () => {
         console.log(`Retrieving feeds...`);
+        setLoadingState(true);
         const response = await axios.get(`${config.host}/feeds?owner=${auth?.profileObj.email}`);
         setFeeds(response.data.feeds);
+        setLoadingState(false);
     };
 
     useEffect(() => {
@@ -42,14 +46,14 @@ export const FeedsList = (props: IProps) => {
     };
 
     return <>
-        {feeds && <div>
+        <Spin spinning={loading || !feeds}>
 
-            <Menu theme="dark" mode="inline">
-                <Menu.Item onClick={() => setNewFeedOpenState(true)} icon={<PlusOutlined />}>Create new feed</Menu.Item>
-                {feeds.map(feed => <Menu.Item key={feed.id} icon={<DesktopOutlined />} onClick={() => onSelected(feed.id)}>{feed.name}</Menu.Item>)}
-            </Menu>
+            {feeds && <Menu theme="dark" mode="inline">
+                <Menu.Item onClick={() => setNewFeedOpenState(true)} icon={<PlusOutlined />} key="new_feed">Create new feed</Menu.Item>
+                {feeds.map(feed => <Menu.Item key={feed.id} icon={resolveIcon(feed.icon)} onClick={() => onSelected(feed.id)}>{feed.name}</Menu.Item>)}
+            </Menu>}
 
-        </div> || <p>loading...</p>}
+        </Spin>
         <NewFeedModal open={newFeedModalOpen} onCreated={onNewFeedCreated} onCancel={() => setNewFeedOpenState(false)} />
     </>;
 
