@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { IPost } from '../types/post';
 import { Card as AntCard, Divider } from 'antd';
+import { RightCircleOutlined } from '@ant-design/icons';
 
 const { Meta } = AntCard;
 
@@ -33,7 +34,7 @@ export const Post = (props: IProps) => {
 
     return <Card
         title={title ?? '[no title]'}
-        extra={link ? <a href={link} target="_blank">open</a> : null}
+        extra={link ? <a href={link} target="_blank">Open <RightCircleOutlined /></a> : null}
     >
         {content && <CustomContentContainer dangerouslySetInnerHTML={{ __html: content }}></CustomContentContainer>}
         <Divider style={{ margin: '2px 0 16px' }} />

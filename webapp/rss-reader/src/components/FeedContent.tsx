@@ -7,7 +7,7 @@ import { Post } from './Post';
 import { IFeed } from '../types/feed';
 import { Pagination, Spin, Result, Button } from 'antd';
 import styled from 'styled-components';
-import { SmileOutlined } from '@ant-design/icons';
+import { SmileOutlined, EditOutlined } from '@ant-design/icons';
 import { EditFeedModal } from './EditFeedModal';
 
 interface IProps {
@@ -102,7 +102,7 @@ export const FeedContent = (props: IProps) => {
         return <div ref={containerRef}>
             <ContentHeaderContainer>
                 <h2>Feed "{feed!.feedName}"</h2>
-                <Button type="primary" onClick={() => setEditModalOpenState(true)}>Edit feed</Button>
+                <Button type="primary" onClick={() => setEditModalOpenState(true)} icon={<EditOutlined />}>Edit feed</Button>
             </ContentHeaderContainer>
             <EditFeedModal feed={feed!} open={editModalOpen} onClosed={() => setEditModalOpenState(false)} onSourcesChange={updateFeed} />
             {
