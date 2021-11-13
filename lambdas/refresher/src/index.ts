@@ -6,11 +6,14 @@ import Parser from 'rss-parser';
 declare const console: any; // TODO: fix compiler options
 
 type LambdaEvent = APIGatewayProxyEvent & { sourceUrl?: string };
+type RssParsingResult = { sourceUrl: string, rss: Parser.Output<any> };
 
 const feedsTableName = 'rss-feeds-table';
 const postsTableName = 'rss-posts-table';
 
-const parser = new Parser();
+const parser = new Parser({
+    timeout: 10000,
+});
 
 const CHUNK_SIZE_LIMIT = 300000;
 
@@ -70,8 +73,14 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
 
     const chunks: ISourceChunk[] = [];
 
-    for (const sourceUrl of sources!) {
-        const rss = await parser.parseURL(sourceUrl);
+    const rssPromises: Promise<RssParsingResult>[] = sources!.map(sourceUrl => {
+        return parser.parseURL(sourceUrl).then(rss => ({ sourceUrl, rss }));
+    });
+
+    const rssResults = (await Promise.allSettled(rssPromises)).filter(result => result.status === 'fulfilled');
+
+    for (const result of rssResults) {
+        const { rss, sourceUrl } = (result as PromiseFulfilledResult<RssParsingResult>).value;
         const rssItems = rss.items;
         console.log(`for source "${sourceUrl}" loaded items: ${rssItems.length}`);
         let lengthCounter = 2;
