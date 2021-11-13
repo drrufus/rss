@@ -50,6 +50,7 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
                 id: `${ownerName}_${body.name}`,
                 ownerEmail,
                 name: body.name,
+                icon: body.icon ?? 'comment',
                 sources: [],
             },
             ConditionExpression: 'attribute_not_exists(id)',
