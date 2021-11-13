@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import './index.css';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 
 // WARN: strict mode causes annoying deprecation warnings in the console, for the production build it should be enabled
 // (well, this app will never be in any kind of production, but howbeit...)
@@ -15,9 +16,11 @@ import './index.css';
 // );
 
 ReactDOM.render(
-  <>
-    <App />
-  </>,
+  <Router>
+    <Routes>
+      <Route path="/" element={<App />} />
+    </Routes>
+  </Router>,
   document.getElementById('root')
 );
 
