@@ -69,6 +69,52 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         };
     }
 
+    let lambdaCallReponse = undefined;
+
+    try {
+        lambdaCallReponse = await lambda.invoke({
+            FunctionName: refresherLambdaName,
+            InvocationType: 'RequestResponse',
+            LogType: 'Tail',
+            Payload: JSON.stringify({
+                sourceUrl,
+            }),
+        }).promise();
+
+        console.log('payload:');
+        console.log(lambdaCallReponse.Payload?.toString());
+
+        if (lambdaCallReponse.StatusCode !== 200 || lambdaCallReponse.FunctionError) {
+            return {
+                statusCode: 500,
+                headers: corsHeaders,
+                body: JSON.stringify({
+                    errorMessage: `An error has been occurred while communicating with Refresher-lambda`,
+                }),
+            };
+        } else {
+            const payload = JSON.parse(lambdaCallReponse.Payload?.toString() ?? '{}');
+            const body = JSON.parse(payload.body ?? '{}');
+            if (body.chunksAdded === 0) {
+                return {
+                    statusCode: 400,
+                    headers: corsHeaders,
+                    body: JSON.stringify({
+                        errorMessage: `No RSS data found on ${sourceUrl}`,
+                    }),
+                };
+            }
+        }
+    } catch (err: any) {
+        return {
+            statusCode: 500,
+            headers: corsHeaders,
+            body: JSON.stringify({
+                errorMessage: 'Unknown lambda call error: ' + JSON.stringify(err),
+            }),
+        };
+    }
+
     try {
         await ddb.update(
             {
@@ -116,43 +162,15 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         }
     }
 
-    try {
-        const lambdaCallReponse = await lambda.invoke({
-            FunctionName: refresherLambdaName,
-            InvocationType: 'RequestResponse',
-            LogType: 'Tail',
-            Payload: JSON.stringify({
-                sourceUrl,
-            }),
-        }).promise();
-        
-        if (lambdaCallReponse.StatusCode !== 200) {
-            return {
-                statusCode: 500,
-                headers: corsHeaders,
-                body: JSON.stringify({
-                    errorMessage: 'Refresher-Lambda returned code ' + lambdaCallReponse.StatusCode,
-                }),
-            };
-        }
-    } catch (err: any) {
-        return {
-            statusCode: 500,
-            headers: corsHeaders,
-            body: JSON.stringify({
-                errorMessage: 'Unknown lambda call error: ' + JSON.stringify(err),
-            }),
-        };
-    }
-
     return {
         statusCode: 200,
         headers: corsHeaders,
         body: JSON.stringify({
             feedId,
             sourceUrl,
+            lambdaCallReponse,
         }),
     };
-    
+
 
 }
