@@ -5,9 +5,9 @@ import { config } from '../config';
 import { IPost } from '../types/post';
 import { Post } from './Post';
 import { IFeed } from '../types/feed';
-import { Pagination, Spin, Result, Button } from 'antd';
+import { Pagination, Spin, Result, Button as AntButton } from 'antd';
 import styled from 'styled-components';
-import { SmileOutlined, EditOutlined } from '@ant-design/icons';
+import { SmileOutlined, EditOutlined, RedoOutlined, FrownOutlined } from '@ant-design/icons';
 import { EditFeedModal } from './EditFeedModal';
 
 interface IProps {
@@ -19,8 +19,8 @@ interface IPaginationState {
     pageSize: number;
 }
 
-const NoContentPlaceholder = styled.div`
-
+const Button = styled(AntButton)`
+    margin: 0 2px;
 `;
 
 const ContentHeaderContainer = styled.div`
@@ -46,6 +46,8 @@ export const FeedContent = (props: IProps) => {
     const [editModalOpen, setEditModalOpenState] = useState(false);
 
     const [feed, setFeed] = useState(null as IFeed | null);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
 
     const postsCount = feed?.chunks.reduce((acc, curr) => acc + curr.items.length, 0);
     const pages: (IPost[])[] = [];
@@ -53,17 +55,22 @@ export const FeedContent = (props: IProps) => {
         .flatMap(s => s.items)
         ?.sort((item1, item2) => (item2.isoDate ? (new Date(item2.isoDate)).getTime() : 0) - (item1.isoDate ? (new Date(item1.isoDate)).getTime() : 0))
         .forEach((post, idx) => {
-        if (idx % pagination.pageSize === 0) {
-            pages.push([]);
-        }
-        pages[pages.length - 1].push(post);
-    });
+            if (idx % pagination.pageSize === 0) {
+                pages.push([]);
+            }
+            pages[pages.length - 1].push(post);
+        });
 
     const updateFeed = async () => {
         setLoadingState(true);
-        const feedResponse = await axios.get(`${config.host}/feeds/${selectedFeedId}`);
-        const feed: IFeed = feedResponse.data;
-        setFeed(feed);
+        setErrorMsg(null);
+        try {
+            const feedResponse = await axios.get(`${config.host}/feeds/${selectedFeedId}`);
+            const feed: IFeed = feedResponse.data;
+            setFeed(feed);
+        } catch (err: any) {
+            setErrorMsg(err.response?.data?.errorMessage ?? 'Unknown error');
+        }
         setLoadingState(false);
     };
 
@@ -102,7 +109,10 @@ export const FeedContent = (props: IProps) => {
         return <div ref={containerRef}>
             <ContentHeaderContainer>
                 <h2>Feed "{feed!.feedName}"</h2>
-                <Button type="primary" onClick={() => setEditModalOpenState(true)} icon={<EditOutlined />}>Edit feed</Button>
+                <div>
+                    <Button type="primary" onClick={updateFeed} icon={<RedoOutlined />}>Refresh</Button>
+                    <Button type="primary" onClick={() => setEditModalOpenState(true)} icon={<EditOutlined />}>Edit feed</Button>
+                </div>
             </ContentHeaderContainer>
             <EditFeedModal feed={feed!} open={editModalOpen} onClosed={() => setEditModalOpenState(false)} onSourcesChange={updateFeed} />
             {
@@ -119,14 +129,14 @@ export const FeedContent = (props: IProps) => {
                             onShowSizeChange={onPageSizeChanged}
                         />
                     </div>
-                </> || <NoContentPlaceholder>
+                </> || <div>
                     <Result icon={<SmileOutlined />} title="Nothing to show here" />
-                </NoContentPlaceholder>
+                </div>
             }
         </div>;
+    } else if (errorMsg) {
+        return <Result icon={<FrownOutlined style={{ color: '#ff928a' }}/>} title={`Unable to get this feed: ${errorMsg}`} />;
     } else {
-        return <NoContentPlaceholder>
-            <Result icon={<SmileOutlined />} title="Choose something pls" />
-        </NoContentPlaceholder>;
+        return <Result icon={<SmileOutlined />} title="Choose something pls" />;
     }
 };

@@ -15,6 +15,12 @@ interface IProps {
     onFeedSelected: (feedId: string) => void;
 }
 
+const LoginReminder = styled.p`
+    color: white;
+    display: block;
+    padding: 8px;
+`;
+
 export const FeedsList = (props: IProps) => {
 
     const state = useContext(AppContext);
@@ -33,7 +39,9 @@ export const FeedsList = (props: IProps) => {
     };
 
     useEffect(() => {
-        (async () => await updateList())();
+        if (auth) {
+            (async () => await updateList())();
+        }
     }, [auth]);
 
     const onSelected = (id: string) => {
@@ -46,14 +54,15 @@ export const FeedsList = (props: IProps) => {
     };
 
     return <>
-        <Spin spinning={loading || !feeds}>
+        {auth && <Spin spinning={loading || !feeds}>
 
             {feeds && <Menu theme="dark" mode="inline">
                 <Menu.Item onClick={() => setNewFeedOpenState(true)} icon={<PlusOutlined />} key="new_feed">Create new feed</Menu.Item>
                 {feeds.map(feed => <Menu.Item key={feed.id} icon={resolveIcon(feed.icon)} onClick={() => onSelected(feed.id)}>{feed.name}</Menu.Item>)}
             </Menu>}
 
-        </Spin>
+        </Spin> || <LoginReminder style={{ color: 'white' }}>Log in to see your personal feeds list</LoginReminder>}
+
         <NewFeedModal open={newFeedModalOpen} onCreated={onNewFeedCreated} onCancel={() => setNewFeedOpenState(false)} />
     </>;
 
