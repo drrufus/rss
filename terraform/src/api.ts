@@ -3,9 +3,10 @@ import { ApiGatewayDeployment, ApiGatewayIntegration, ApiGatewayIntegrationRespo
 import { ICreateApiResult } from "./types/create-api-results";
 import { ILambdasCreationResult } from "./types/lambdas-creation-result";
 import { ApigatewayCors } from "../.gen/modules/mewa/aws/apigateway-cors";
+import { IUiCreationResults } from "./types/ui-creation-results";
 // import { ApiGatewayEnableCors } from "../.gen/modules/squidfunk/aws/api-gateway-enable-cors";
 
-export function createApi(scope: Construct, name: string, lambdas: ILambdasCreationResult): ICreateApiResult {
+export function createApi(scope: Construct, name: string, lambdas: ILambdasCreationResult, ui: IUiCreationResults): ICreateApiResult {
 
     const apiName = `${name}-api`;
     const api = new ApiGatewayRestApi(scope, apiName, {
@@ -26,9 +27,15 @@ export function createApi(scope: Construct, name: string, lambdas: ILambdasCreat
 
     // POST /feeds
 
-    const feedsResource = new ApiGatewayResource(scope, `${name}-api-feeds-resource`, {
+    const apiRootResource = new ApiGatewayResource(scope, `${name}-api-root-resource`, {
         restApiId: api.id,
         parentId: api.rootResourceId,
+        pathPart: 'api',
+    });
+
+    const feedsResource = new ApiGatewayResource(scope, `${name}-api-feeds-resource`, {
+        restApiId: api.id,
+        parentId: apiRootResource.id,
         pathPart: 'feeds',
     });
 
@@ -230,6 +237,59 @@ export function createApi(scope: Construct, name: string, lambdas: ILambdasCreat
 
 
 
+    // proxy for the UI
+
+    const uiResource = new ApiGatewayResource(scope, `${name}-api-ui-resource` , {
+        restApiId: api.id,
+        parentId: api.rootResourceId,
+        pathPart: 'ui',
+    });
+
+    const uiMethod = new ApiGatewayMethod(scope, `${name}-api-ui-method`, {
+        restApiId: api.id,
+        resourceId: uiResource.id,
+        httpMethod: 'GET',
+        authorization: 'NONE',
+    });
+
+    const uiIntegration = new ApiGatewayIntegration(scope, `${name}-ui-integration`, {
+        restApiId: api.id,
+        resourceId: uiResource.id,
+        httpMethod: uiMethod.httpMethod,
+        type: 'HTTP_PROXY',
+        integrationHttpMethod: 'GET',
+        uri: 'http://' + ui.websiteUrl + '/index.html',
+    });
+
+    const uiProxyResource = new ApiGatewayResource(scope, `${name}-api-ui-proxy-resource`, {
+        restApiId: api.id,
+        parentId: uiResource.id,
+        pathPart: '{proxy+}',
+    });
+
+    const uiProxyMethod = new ApiGatewayMethod(scope, `${name}-api-ui-proxy-method`, {
+        restApiId: api.id,
+        resourceId: uiProxyResource.id,
+        httpMethod: 'GET',
+        authorization: 'NONE',
+        requestParameters: {
+            'method.request.path.proxy': true,
+        }
+    });
+
+    const uiProxyIntegration = new ApiGatewayIntegration(scope, `${name}-ui-proxy-integration`, {
+        restApiId: api.id,
+        resourceId: uiProxyResource.id,
+        httpMethod: uiProxyMethod.httpMethod,
+        type: 'HTTP_PROXY',
+        integrationHttpMethod: 'GET',
+        uri: 'http://' + ui.websiteUrl + '/{proxy}',
+        requestParameters: {
+            'integration.request.path.proxy': 'method.request.path.proxy',
+        }
+    });
+
+
     // deployment
 
     const apiDeployment = new ApiGatewayDeployment(scope, `${name}-api-deployment`, {
@@ -245,6 +305,7 @@ export function createApi(scope: Construct, name: string, lambdas: ILambdasCreat
             getFeedsIntegration,
             getFeedsResponse,
             getFeedsIntegrationResponse,
+            // uiProxyIntegration,
         ],
     });
 

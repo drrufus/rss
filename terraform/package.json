@@ -23,9 +23,13 @@
   },
   "dependencies": {
     "cdktf": "^0.6.4",
-    "constructs": "^10.0.0"
+    "constructs": "^10.0.0",
+    "glob": "^7.2.0",
+    "mime-types": "^2.1.34"
   },
   "devDependencies": {
+    "@types/mime-types": "^2.1.1",
+    "@types/glob": "^7.2.0",
     "@types/jest": "^27.0.2",
     "@types/node": "^16.11.6",
     "jest": "^27.3.1",

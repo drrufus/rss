@@ -4,6 +4,7 @@ import { AwsProvider } from './.gen/providers/aws';
 import { createDatabase } from './src/db';
 import { createLambdas } from './src/lambdas';
 import { createApi } from './src/api';
+import { createUiEntities } from './src/ui';
 
 class MyStack extends TerraformStack {
     constructor(scope: Construct, name: string) {
@@ -17,7 +18,8 @@ class MyStack extends TerraformStack {
 
         const databases = createDatabase(this, name);
         const lambdas = createLambdas(this, name, databases);
-        const api = createApi(this, name, lambdas);
+        const ui = createUiEntities(this, name);
+        const api = createApi(this, name, lambdas, ui);
 
     }
 }
