@@ -1,4 +1,3 @@
-export interface IAddSourceRequest {
-    feedId: string;
-    sourceUrl: string;
+export interface IPayload {
+    sourceUrl?: string;
 }

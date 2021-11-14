@@ -9,6 +9,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "dependencies": {
+    "rss-common": "file:../../common/rss-common-0.0.3.tgz"
+  },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.76",
     "@types/node": "^16.11.6",

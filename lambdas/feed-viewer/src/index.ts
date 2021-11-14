@@ -1,16 +1,10 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDB } from 'aws-sdk';
+import { LambdaResponse, LambdaError } from 'rss-common/dist';
 
 const ddb = new DynamoDB.DocumentClient();
 const sourcesTableName = 'rss-posts-table';
 const feedsTableName = 'rss-feeds-table';
-
-const corsHeaders = {
-    'Access-Control-Allow-Headers': '*',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Credentials': 'true',
-    'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS'
-};
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
 
@@ -21,13 +15,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         const ownerEmail = event.queryStringParameters?.owner;
 
         if (!ownerEmail) {
-            return {
-                statusCode: 400,
-                headers: corsHeaders,
-                body: JSON.stringify({
-                    errorMessage: 'No owner specified',
-                }),
-            };
+            return new LambdaError('No owner specified', 400);
         }
 
         const feedsQueryResponse = await ddb.query({
@@ -41,13 +29,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         const userFeeds = feedsQueryResponse.Items;
 
-        return {
-            statusCode: 200,
-            headers: corsHeaders,
-            body: JSON.stringify({
-                feeds: userFeeds,
-            }),
-        };
+        return new LambdaResponse({
+            feeds: userFeeds,
+        });
 
     } else {                    // get concrete feed's content
 
@@ -58,13 +42,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             },
         }).promise();
         if (!feedQueryResponse.Item) {
-            return {
-                statusCode: 404,
-                headers: corsHeaders,
-                body: JSON.stringify({
-                    errorMessage: `No feed "${urlParam}" found`,
-                }),
-            };
+            return new LambdaError(`No feed "${urlParam}" found`, 404);
         } else {
             const feed = feedQueryResponse.Item!;
             const sourceUrls: string[] = feed.sources;
@@ -80,17 +58,13 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 sourceUrl: chunk.feedUrl,
                 items: JSON.parse(chunk.content),
             }));
-            return {
-                statusCode: 200,
-                headers: corsHeaders,
-                body: JSON.stringify({
-                    id: feed.id,
-                    feedName: feed.name,
-                    ownerEmail: feed.ownerEmail,
-                    sources: sourceUrls,
-                    chunks,
-                }),
-            };
+            return new LambdaResponse({
+                id: feed.id,
+                feedName: feed.name,
+                ownerEmail: feed.ownerEmail,
+                sources: sourceUrls,
+                chunks,
+            });
         }
 
     }

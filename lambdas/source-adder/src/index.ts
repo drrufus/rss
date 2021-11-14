@@ -1,25 +1,13 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDB, Lambda } from 'aws-sdk';
-import { IAddSourceRequest } from './types';
+import { IPayload } from './types';
+import { LambdaResponse, LambdaError } from 'rss-common/dist';
 
 const feedsTableName = 'rss-feeds-table';
 const ddb = new DynamoDB.DocumentClient();
 const lambda = new Lambda();
 
-interface IPayload {
-    sourceUrl?: string;
-}
-
-const corsHeaders = {
-    'Access-Control-Allow-Headers': '*',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Credentials': 'true',
-    'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS'
-};
-
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-
-    // const ownerEmail = 'test@domain.com';
 
     const feedId = event.pathParameters?.proxy ?? '';
     const payload: IPayload = JSON.parse(event.body!) ?? {};
@@ -29,50 +17,28 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const ownerId = event.requestContext.authorizer!.user_id;
 
     if (!ownerEmail || !ownerId) {
-        return {
-            statusCode: 500,
-            headers: corsHeaders,
-            body: JSON.stringify({
-                errorMessage: 'Missing authorizer data',
-            }),
-        };
+        return new LambdaError('Missing authorizer data', 500);
     }
 
     if (!feedId.startsWith(ownerEmail.match(/^[^@]+/)![0])) {
-        return {
-            statusCode: 403,
-            headers: corsHeaders,
-            body: JSON.stringify({
-                errorMessage: 'An attempt to modify feed of other user',
-            }),
-        }
+        return new LambdaError('An attempt to modify feed of other user', 403);
     }
 
     if (!feedId || !sourceUrl) {
-        return {
-            statusCode: 400,
-            headers: corsHeaders,
-            body: JSON.stringify({
-                errorMessage: 'Invalid input',
-            }),
-        };
+        return new LambdaError('Invalid input', 400);
     }
 
     const refresherLambdaName = process.env['REFRESHER_LAMBDA_NAME'];
     if (!refresherLambdaName) {
-        return {
-            statusCode: 500,
-            headers: corsHeaders,
-            body: JSON.stringify({
-                errorMessage: 'Configuration error: refresher lambda name is not specified',
-            }),
-        };
+        return new LambdaError('Configuration error: refresher lambda name is not specified', 500);
     }
 
-    let lambdaCallReponse = undefined;
-
+    /**
+     * on the first step it will call the refresher-lambda. it will try to download RSS data from this source,
+     * so a new source's url will be stored in the database only if it's actually valid and contains some data.
+     */
     try {
-        lambdaCallReponse = await lambda.invoke({
+        const lambdaCallReponse = await lambda.invoke({
             FunctionName: refresherLambdaName,
             InvocationType: 'RequestResponse',
             LogType: 'Tail',
@@ -81,40 +47,23 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             }),
         }).promise();
 
-        console.log('payload:');
-        console.log(lambdaCallReponse.Payload?.toString());
-
         if (lambdaCallReponse.StatusCode !== 200 || lambdaCallReponse.FunctionError) {
-            return {
-                statusCode: 500,
-                headers: corsHeaders,
-                body: JSON.stringify({
-                    errorMessage: `An error has been occurred while communicating with Refresher-lambda`,
-                }),
-            };
+            return new LambdaError(`An error has been occurred while communicating with Refresher-lambda`, 500);
         } else {
             const payload = JSON.parse(lambdaCallReponse.Payload?.toString() ?? '{}');
             const body = JSON.parse(payload.body ?? '{}');
             if (body.chunksAdded === 0) {
-                return {
-                    statusCode: 400,
-                    headers: corsHeaders,
-                    body: JSON.stringify({
-                        errorMessage: `No RSS data found on ${sourceUrl}`,
-                    }),
-                };
+                return new LambdaError(`No RSS data found on ${sourceUrl}`, 400);
             }
         }
     } catch (err: any) {
-        return {
-            statusCode: 500,
-            headers: corsHeaders,
-            body: JSON.stringify({
-                errorMessage: 'Unknown lambda call error: ' + JSON.stringify(err),
-            }),
-        };
+        return new LambdaError('Unknown lambda call error: ' + JSON.stringify(err), 500);
     }
 
+    /**
+     * at this point we're sure that this source is valid and RSS data is already downloaded and stored,
+     * so a url is being added to a feed.
+     */
     try {
         await ddb.update(
             {
@@ -133,44 +82,20 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     } catch (err: any) {
         switch (err.code) {
             case 'ValidationException': {
-                return {
-                    statusCode: 400,
-                    headers: corsHeaders,
-                    body: JSON.stringify({
-                        errorMessage: 'An attempt to modify feed that doesn\'t exist',
-                    }),
-                };
+                return new LambdaError('An attempt to modify feed that doesn\'t exist', 400);
             }
             case 'ConditionalCheckFailedException': {
-                return {
-                    statusCode: 400,
-                    headers: corsHeaders,
-                    body: JSON.stringify({
-                        errorMessage: 'Some condition failed',
-                    }),
-                };
+                return new LambdaError('Some condition failed', 400);
             }
             default: {
-                return {
-                    statusCode: 500,
-                    headers: corsHeaders,
-                    body: JSON.stringify({
-                        errorMessage: `Update error (${JSON.stringify(err)})`,
-                    }),
-                };
+                return new LambdaError(`Update error (${JSON.stringify(err)})`, 500);
             }
         }
     }
 
-    return {
-        statusCode: 200,
-        headers: corsHeaders,
-        body: JSON.stringify({
-            feedId,
-            sourceUrl,
-            lambdaCallReponse,
-        }),
-    };
-
+    return new LambdaResponse({
+        feedId,
+        sourceUrl,
+    });
 
 }

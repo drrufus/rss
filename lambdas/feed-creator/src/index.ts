@@ -1,6 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDB } from 'aws-sdk';
 import { ICreateFeedRequest } from './types';
+import { LambdaError, LambdaResponse } from 'rss-common/dist';
 
 type LambdaEvent = APIGatewayProxyEvent & { postBody: ICreateFeedRequest };
 
@@ -21,25 +22,13 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
     const ownerEmail = event.requestContext.authorizer!.email;
     const ownerId = event.requestContext.authorizer!.user_id;
     if (!ownerEmail || !ownerId) {
-        return {
-            statusCode: 500,
-            headers: corsHeaders,
-            body: JSON.stringify({
-                errorMessage: 'Missing authorizer data',
-            }),
-        };
+        return new LambdaError('Missing authorizer data', 500);
     }
 
     const ownerName = ownerEmail.match(/^[^@]+/)![0];
 
     if (!body?.name || body.name === '' || !body.name.match(/^[a-zA-Z0-9-]+$/)) {
-        return {
-            statusCode: 400,
-            headers: corsHeaders,
-            body: JSON.stringify({
-                errorMessage: 'Invalid input',
-            }),
-        };
+        return new LambdaError('Invalid input', 400);
     }
 
     try {
@@ -56,29 +45,13 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
             ConditionExpression: 'attribute_not_exists(id)',
         }).promise();
 
-        return {
-            statusCode: 200,
-            headers: corsHeaders,
-            body: JSON.stringify(event),    // TODO: returning event only for debug
-        };
+        return new LambdaResponse(event); // TODO: returning event only for debug
 
     } catch (err: any) {
         if (err.code === 'ConditionalCheckFailedException') {
-            return {
-                statusCode: 400,
-                headers: corsHeaders,
-                body: JSON.stringify({
-                    errorMessage: 'Feed with this name already exists',
-                }),
-            };
+            return new LambdaError('Feed with this name already exists', 400);
         } else {
-            return {
-                statusCode: 500,
-                headers: corsHeaders,
-                body: JSON.stringify({
-                    errorMessage: `Insertion error (${JSON.stringify(err)})`,
-                }),
-            };
+            return new LambdaError(`Insertion error (${JSON.stringify(err)})`, 500);
         }
     }
 
