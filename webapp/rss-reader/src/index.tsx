@@ -10,13 +10,17 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 
 // ReactDOM.render(
 //   <React.StrictMode>
-//     <App />
+//     <Router basename={window.location.pathname}>
+//       <Routes>
+//         <Route path="/" element={<App />} />
+//       </Routes>
+//     </Router>
 //   </React.StrictMode>,
 //   document.getElementById('root')
 // );
 
 ReactDOM.render(
-  <Router>
+  <Router basename={window.location.pathname}>
     <Routes>
       <Route path="/" element={<App />} />
     </Routes>
