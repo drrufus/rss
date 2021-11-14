@@ -5,9 +5,13 @@ import { LambdaError, LambdaResponse } from 'rss-common/dist';
 
 type LambdaEvent = APIGatewayProxyEvent & { postBody: ICreateFeedRequest };
 
-const feedsTableName = 'rss-feeds-table';
+const feedsTableName = process.env['FEEDS_TABLE_NAME'];
 
 export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult> => {
+
+    if (!feedsTableName) {
+        return new LambdaError('Configuration error: missing FEEDS_TABLE_NAME parameter', 500);
+    }
 
     const ddb = new DynamoDB.DocumentClient();
     const body: ICreateFeedRequest = JSON.parse(event.body!);

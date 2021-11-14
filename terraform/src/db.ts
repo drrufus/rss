@@ -62,7 +62,9 @@ export function createDatabase(scope: Construct, name: string): IDatabasesCreati
     });
 
     return {
+        feedsTableName,
         feedsTableArn: feedsTable.arn,
+        postsTableName,
         postsTableArn: postsTable.arn,
     }
 

@@ -3,10 +3,14 @@ import { DynamoDB } from 'aws-sdk';
 import { LambdaResponse, LambdaError } from 'rss-common/dist';
 
 const ddb = new DynamoDB.DocumentClient();
-const sourcesTableName = 'rss-posts-table';
-const feedsTableName = 'rss-feeds-table';
+const postsTableName = process.env['POSTS_TABLE_NAME'];
+const feedsTableName = process.env['FEEDS_TABLE_NAME'];
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+
+    if (!postsTableName || !feedsTableName) {
+        return new LambdaError('Configuration error: missing FEEDS_TABLE_NAME or/and POSTS_TABLE_NAME parameter')
+    }
 
     const urlParam = (event as any).pathParameters?.proxy ?? null;
 
@@ -47,7 +51,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             const feed = feedQueryResponse.Item!;
             const sourceUrls: string[] = feed.sources;
             const soucesQueryResponse = await ddb.scan({
-                TableName: sourcesTableName,
+                TableName: postsTableName,
                 FilterExpression: 'contains(:list, feedUrl)',
                 ExpressionAttributeValues: {
                     ':list': sourceUrls,

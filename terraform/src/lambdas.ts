@@ -132,6 +132,12 @@ export function createLambdas(scope: Construct, name: string, databases: IDataba
         handler: 'index.handler',
         runtime: 'nodejs14.x',
         role: lambdasRole.arn,
+        environment: [{
+            variables: {
+                FEEDS_TABLE_NAME: databases.feedsTableName,
+            }
+        }],
+        timeout: 29,
     });
 
     const refresherLambdaName = `${name}-refresher-lambda`;
@@ -142,6 +148,12 @@ export function createLambdas(scope: Construct, name: string, databases: IDataba
         handler: 'index.handler',
         runtime: 'nodejs14.x',
         role: lambdasRole.arn,
+        environment: [{
+            variables: {
+                FEEDS_TABLE_NAME: databases.feedsTableName,
+                POSTS_TABLE_NAME: databases.postsTableName,
+            }
+        }],
         timeout: 300,
     });
 
@@ -156,6 +168,7 @@ export function createLambdas(scope: Construct, name: string, databases: IDataba
         environment: [{
             variables: {
                 REFRESHER_LAMBDA_NAME: refresherLambda.functionName,
+                FEEDS_TABLE_NAME: databases.feedsTableName,
             }
         }],
         timeout: 29,
@@ -169,6 +182,13 @@ export function createLambdas(scope: Construct, name: string, databases: IDataba
         handler: 'index.handler',
         runtime: 'nodejs14.x',
         role: lambdasRole.arn,
+        environment: [{
+            variables: {
+                FEEDS_TABLE_NAME: databases.feedsTableName,
+                POSTS_TABLE_NAME: databases.postsTableName,
+            }
+        }],
+        timeout: 29,
     });
 
     const authorizerLambdaName = `${name}-authorizer-lambda`;

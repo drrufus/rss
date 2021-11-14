@@ -3,17 +3,22 @@ import { DynamoDB } from 'aws-sdk';
 import { IFeed, ISourceChunk, RssParsingResult } from './types';
 import Parser from 'rss-parser';
 import { sliceToChunks } from './utils';
+import { LambdaResponse, LambdaError } from 'rss-common/dist';
 
 type LambdaEvent = APIGatewayProxyEvent & { sourceUrl?: string };
 
-const feedsTableName = 'rss-feeds-table';
-const postsTableName = 'rss-posts-table';
+const postsTableName = process.env['POSTS_TABLE_NAME'];
+const feedsTableName = process.env['FEEDS_TABLE_NAME'];
 
 const parser = new Parser({
     timeout: 10000,
 });
 
 export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult> => {
+
+    if (!postsTableName || !feedsTableName) {
+        return new LambdaError('Configuration error: missing FEEDS_TABLE_NAME or/and POSTS_TABLE_NAME parameter')
+    }
 
     const ddb = new DynamoDB.DocumentClient();
     const sourceUrl = event.sourceUrl;
@@ -106,10 +111,8 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
         }).promise();
     }
 
-    return {
-        statusCode: 200,
-        body: JSON.stringify({
-            chunksAdded: chunks.length,
-        }),
-    };
+    return new LambdaResponse({
+        chunksAdded: chunks.length,
+    });
+
 }
