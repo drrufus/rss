@@ -135,8 +135,14 @@ export const FeedContent = (props: IProps) => {
             }
         </div>;
     } else if (errorMsg) {
-        return <Result icon={<FrownOutlined style={{ color: '#ff928a' }}/>} title={`Unable to get this feed: ${errorMsg}`} />;
+        return <Result
+            icon={<FrownOutlined style={{ color: '#ff928a' }}/>}
+            title={`Unable to get this feed: ${errorMsg}`}
+        />;
     } else {
-        return <Result icon={<SmileOutlined />} title="Choose something pls" />;
+        return <Result
+            icon={<SmileOutlined />}
+            title="Choose something pls"
+        />;
     }
 };

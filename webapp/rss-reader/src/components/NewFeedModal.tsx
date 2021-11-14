@@ -21,7 +21,7 @@ export const NewFeedModal = (props: IProps) => {
     const authorized = !!context.auth?.accessToken;
 
     const [nameInput, setNameInput] = useState('');
-    const nameIsValid = nameInput.match(/^[a-zA-Z0-9-]{3,}$/);
+    const nameIsValid = nameInput.match(/^[a-zA-Z0-9-]{3,20}$/);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [selectedIcon, setSelectedIcon] = useState(ICONS[0]);
     const [loading, setLoadingState] = useState(false);
@@ -63,12 +63,13 @@ export const NewFeedModal = (props: IProps) => {
         <Form>
             <Form.Item
                 validateStatus={nameInput === '' || nameIsValid ? 'success' : 'error'}
-                help="Name must contain only latin letters and digits"
+                help="Name must contain only latin letters and digits and be 3-20 characters long"
             >
                 <Input
                     placeholder="Feed name"
                     value={nameInput}
                     onChange={e => setNameInput(e.target.value)}
+                    maxLength={20}
                 />
             </Form.Item>
 

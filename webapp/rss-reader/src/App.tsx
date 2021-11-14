@@ -35,7 +35,7 @@ export const AppContext = React.createContext<IAppState>({
     logout: () => {},
 });
 
-function App(props: any) {
+function App() {
 
     const location = useLocation();
     const feedParam = getFeedIdFromLocation(location);
