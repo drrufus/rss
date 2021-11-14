@@ -7,13 +7,6 @@ type LambdaEvent = APIGatewayProxyEvent & { postBody: ICreateFeedRequest };
 
 const feedsTableName = 'rss-feeds-table';
 
-const corsHeaders = {
-    'Access-Control-Allow-Headers': '*',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Credentials': 'true',
-    'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS'
-};
-
 export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult> => {
 
     const ddb = new DynamoDB.DocumentClient();
@@ -33,19 +26,21 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
 
     try {
 
+        const item = {
+            id: `${ownerName}_${body.name}`,
+            ownerEmail,
+            name: body.name,
+            icon: body.icon ?? 'comment',
+            sources: [],
+        };
+
         await ddb.put({
             TableName: feedsTableName,
-            Item: {
-                id: `${ownerName}_${body.name}`,
-                ownerEmail,
-                name: body.name,
-                icon: body.icon ?? 'comment',
-                sources: [],
-            },
+            Item: item,
             ConditionExpression: 'attribute_not_exists(id)',
         }).promise();
 
-        return new LambdaResponse(event); // TODO: returning event only for debug
+        return new LambdaResponse(item);
 
     } catch (err: any) {
         if (err.code === 'ConditionalCheckFailedException') {
