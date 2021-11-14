@@ -1,3 +1,5 @@
+import Parser from 'rss-parser';
+
 export interface IFeed {
     id: string;
     name: string;
@@ -11,3 +13,5 @@ export interface ISourceChunk {
     sourceUrl: string;
     content: any[];
 }
+
+export type RssParsingResult = { sourceUrl: string, rss: Parser.Output<any> };

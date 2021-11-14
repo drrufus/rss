@@ -1,12 +1,10 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDB } from 'aws-sdk';
-import { IFeed, ISourceChunk } from './types';
+import { IFeed, ISourceChunk, RssParsingResult } from './types';
 import Parser from 'rss-parser';
-
-declare const console: any; // TODO: fix compiler options
+import { sliceToChunks } from './utils';
 
 type LambdaEvent = APIGatewayProxyEvent & { sourceUrl?: string };
-type RssParsingResult = { sourceUrl: string, rss: Parser.Output<any> };
 
 const feedsTableName = 'rss-feeds-table';
 const postsTableName = 'rss-posts-table';
@@ -14,8 +12,6 @@ const postsTableName = 'rss-posts-table';
 const parser = new Parser({
     timeout: 10000,
 });
-
-const CHUNK_SIZE_LIMIT = 300000;
 
 export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult> => {
 
@@ -30,7 +26,10 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
         sources = Array.from(new Set(feeds!.flatMap(f => f.sources)));
     }
 
-    // clear old data
+    /**
+     * if sourceUrl parameter has been specified - only chunks of that source must be deleted.
+     * otherwise all sources will be updated - so it's necessary to clear all existing chunks.
+     */
 
     const existingChunksResponse = sourceUrl
         ? await ddb.query({
@@ -45,7 +44,6 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
             TableName: postsTableName,
         }).promise();
     const existingChunksIds = existingChunksResponse.Items!.map(item => item.id);
-    console.log('existing chunks count: ' + existingChunksIds.length);
     const idsBatches: (string[])[] = [];
     existingChunksIds.forEach((id, idx) => {
         if (idx % 25 === 0) {
@@ -69,53 +67,18 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
 
     // add new data
 
-    console.log('sources to refresh:', sources);
+    
 
-    const chunks: ISourceChunk[] = [];
-
+    // all rss-requests are running in parallel:
     const rssPromises: Promise<RssParsingResult>[] = sources!.map(sourceUrl => {
         return parser.parseURL(sourceUrl).then(rss => ({ sourceUrl, rss }));
     });
 
-    const rssResults = (await Promise.allSettled(rssPromises)).filter(result => result.status === 'fulfilled');
+    const rssResults = (await Promise.allSettled(rssPromises))
+        .filter(result => result.status === 'fulfilled')
+        .map(result => (result as PromiseFulfilledResult<RssParsingResult>).value);
 
-    for (const result of rssResults) {
-        const { rss, sourceUrl } = (result as PromiseFulfilledResult<RssParsingResult>).value;
-        const rssItems = rss.items;
-        console.log(`for source "${sourceUrl}" loaded items: ${rssItems.length}`);
-        let lengthCounter = 2;
-        let chunk: ISourceChunk = {
-            id: `${sourceUrl}:0`,
-            index: 0,
-            sourceUrl: sourceUrl,
-            content: [],
-        };
-        rssItems.forEach(item => {
-            const itemLength = JSON.stringify(item).length;
-            // console.log(`item size: ${itemLength}`);
-            if (itemLength < CHUNK_SIZE_LIMIT) {
-                if (lengthCounter + itemLength + 1 < CHUNK_SIZE_LIMIT) {
-                    chunk.content.push(item);
-                    lengthCounter += itemLength + 1;
-                } else {
-                    const prevChunk = chunk;
-                    chunk = {
-                        id: `${sourceUrl}:${prevChunk.index + 1}`,
-                        index: prevChunk.index + 1,
-                        sourceUrl: prevChunk.sourceUrl,
-                        content: [item],
-                    };
-                    lengthCounter = 2 + itemLength;
-                    chunks.push(prevChunk);
-                }
-            }
-        });
-        if (!chunks.includes(chunk) && chunk.content.length > 0) {
-            chunks.push(chunk);
-        }
-    }
-
-    console.log('total chunks: ' + chunks.length);
+    const chunks: ISourceChunk[] = sliceToChunks(rssResults);
 
     const batches: (ISourceChunk[])[] = [];
     chunks.forEach((chunk, idx) => {
