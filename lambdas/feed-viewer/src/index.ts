@@ -1,6 +1,8 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDB } from 'aws-sdk';
-import { LambdaResponse, LambdaError } from 'rss-common/dist';
+import { LambdaResponse, LambdaError, LambdaXmlResponse } from 'rss-common/dist';
+import { IChunk } from './types';
+import { convertToRssXml } from './utils';
 
 const ddb = new DynamoDB.DocumentClient();
 const postsTableName = process.env['POSTS_TABLE_NAME'];
@@ -39,6 +41,11 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     } else {                    // get concrete feed's content
 
+        let format = event.queryStringParameters?.format || 'json';
+        if (format !== 'json' && format !== 'xml') {
+            return new LambdaError('Incorrect format: ' + format, 400);
+        }
+
         const feedQueryResponse = await ddb.get({
             TableName: feedsTableName,
             Key: {
@@ -57,18 +64,25 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     ':list': sourceUrls,
                 },
             }).promise();
-            const chunks = soucesQueryResponse.Items?.map(chunk => ({         // TODO: types
-                id: chunk.id,
-                sourceUrl: chunk.feedUrl,
-                items: JSON.parse(chunk.content),
-            }));
-            return new LambdaResponse({
-                id: feed.id,
-                feedName: feed.name,
-                ownerEmail: feed.ownerEmail,
-                sources: sourceUrls,
-                chunks,
-            });
+            const chunks = (soucesQueryResponse.Items ?? [])
+                .map(chunk => ({
+                    id: chunk.id,
+                    sourceUrl: chunk.feedUrl,
+                    items: JSON.parse(chunk.content)
+                } as IChunk))
+
+            if (format === 'json') {
+                return new LambdaResponse({
+                    id: feed.id,
+                    feedName: feed.name,
+                    ownerEmail: feed.ownerEmail,
+                    sources: sourceUrls,
+                    chunks,
+                });
+            } else {
+                return new LambdaXmlResponse(convertToRssXml(feed.id, feed.name, chunks));
+            }
+
         }
 
     }

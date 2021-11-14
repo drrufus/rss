@@ -1,1 +1,1 @@
-export { LambdaError, LambdaResponse } from './types';
+export { LambdaError, LambdaResponse, LambdaXmlResponse } from './types';

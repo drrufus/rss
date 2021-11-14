@@ -10,7 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "rss-common": "file:../../common/rss-common-0.0.3.tgz"
+    "rss-common": "file:../../common/rss-common-0.0.4.tgz",
+    "xml-js": "^1.6.11"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.76",
