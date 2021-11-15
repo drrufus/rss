@@ -11,7 +11,7 @@ const postsTableName = process.env['POSTS_TABLE_NAME'];
 const feedsTableName = process.env['FEEDS_TABLE_NAME'];
 
 const parser = new Parser({
-    timeout: 10000,
+    timeout: 20000,
 });
 
 export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult> => {
@@ -79,9 +79,13 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
         return parser.parseURL(sourceUrl).then(rss => ({ sourceUrl, rss }));
     });
 
-    const rssResults = (await Promise.allSettled(rssPromises))
+    const settledPromises = await Promise.allSettled(rssPromises)
+    const rssResults = settledPromises
         .filter(result => result.status === 'fulfilled')
         .map(result => (result as PromiseFulfilledResult<RssParsingResult>).value);
+    const rssReadingErrors = settledPromises
+        .filter(result => result.status === 'rejected')
+        .map(result => (result as PromiseRejectedResult).reason?.message ?? 'unknown error');
 
     const chunks: ISourceChunk[] = sliceToChunks(rssResults);
 
@@ -113,6 +117,7 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
 
     return new LambdaResponse({
         chunksAdded: chunks.length,
+        rssReadingErrors,
     });
 
 }
