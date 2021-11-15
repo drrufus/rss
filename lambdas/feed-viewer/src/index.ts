@@ -80,7 +80,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     chunks,
                 });
             } else {
-                return new LambdaXmlResponse(convertToRssXml(feed.id, feed.name, chunks));
+                return new LambdaXmlResponse(convertToRssXml(feed.id, feed.name, feed.link, feed.description, chunks));
             }
 
         }

@@ -1,12 +1,12 @@
 import convert from 'xml-js';
 import { IChunk } from './types';
 
-export function convertToRssXml(feedId: string, feedName: string, chunks: IChunk[]): string {
+export function convertToRssXml(feedId: string, feedName: string, feedLink: string, feedDescription: string, chunks: IChunk[]): string {
 
     const items = (chunks ?? []).flatMap(chunk => chunk.items);
 
-    const description = 'TODO';
-    const link = 'https://google.com';
+    const description = feedDescription;
+    const link = feedLink;
     const feedXmlObject = {
         rss: {
             _attributes: {
