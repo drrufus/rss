@@ -24,7 +24,7 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
 
     const ownerName = ownerEmail.match(/^[^@]+/)![0];
 
-    if (!body?.name || body.name === '' || !body.name.match(/^[a-zA-Z0-9-]+$/)) {
+    if (!body?.name || body.name === '' || !body.name.match(/^[a-zA-Z0-9-]+$/) || !body.description || !body.link) {
         return new LambdaError('Invalid input', 400);
     }
 
@@ -36,6 +36,8 @@ export const handler = async (event: LambdaEvent): Promise<APIGatewayProxyResult
             name: body.name,
             icon: body.icon ?? 'comment',
             sources: [],
+            link: body.link,
+            description: body.description,
         };
 
         await ddb.put({
