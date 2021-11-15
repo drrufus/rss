@@ -3,7 +3,9 @@ import { IChunk } from './types';
 
 export function convertToRssXml(feedId: string, feedName: string, feedLink: string, feedDescription: string, chunks: IChunk[]): string {
 
-    const items = (chunks ?? []).flatMap(chunk => chunk.items);
+    const items = (chunks ?? [])
+        .flatMap(chunk => chunk.items)
+        .sort((item1, item2) => (item2.isoDate ? (new Date(item2.isoDate)).getTime() : 0) - (item1.isoDate ? (new Date(item1.isoDate)).getTime() : 0));;
 
     const description = feedDescription;
     const link = feedLink;
