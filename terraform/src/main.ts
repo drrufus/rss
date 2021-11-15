@@ -1,20 +1,21 @@
 import { Construct } from 'constructs';
 import { App, TerraformStack } from 'cdktf';
-import { AwsProvider } from './.gen/providers/aws';
-import { createDatabase } from './src/db';
-import { createLambdas } from './src/lambdas';
-import { createApi } from './src/api';
-import { createUiEntities } from './src/ui';
-import { createEvents } from './src/events';
+import { AwsProvider } from '../.gen/providers/aws';
+import { createDatabase } from './db';
+import { createLambdas } from './lambdas';
+import { createApi } from './api';
+import { createUiEntities } from './ui';
+import { createEvents } from './events';
+import { CONFIG } from './config';
 
 class MyStack extends TerraformStack {
     constructor(scope: Construct, name: string) {
         super(scope, name);
 
         new AwsProvider(this, 'aws', {
-            region: 'us-west-2',
-            accessKey: process.env['AWS_ACCESS_KEY_ID'],
-            secretKey: process.env['AWS_SECRET_ACCESS_KEY'],
+            region: CONFIG.awsRegion,
+            accessKey: CONFIG.awsAccessKey,
+            secretKey: CONFIG.awsSecretKey,
         });
 
         const databases = createDatabase(this, name);

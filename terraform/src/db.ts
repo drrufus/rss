@@ -10,8 +10,8 @@ export function createDatabase(scope: Construct, name: string): IDatabasesCreati
         hashKey: 'id',
         // rangeKey: 'ownerEmail',
         billingMode: 'PROVISIONED',
-        writeCapacity: 5,
-        readCapacity: 5,
+        writeCapacity: 25,
+        readCapacity: 25,
         attribute: [
             {
                 name: 'id',
@@ -27,8 +27,8 @@ export function createDatabase(scope: Construct, name: string): IDatabasesCreati
                 name: 'some-index',
                 hashKey: 'ownerEmail',
                 projectionType: 'ALL',
-                writeCapacity: 5,
-                readCapacity: 5,
+                writeCapacity: 25,
+                readCapacity: 25,
             },
         ],
     });
@@ -38,8 +38,8 @@ export function createDatabase(scope: Construct, name: string): IDatabasesCreati
         name: postsTableName,
         hashKey: 'id',
         billingMode: 'PROVISIONED',
-        writeCapacity: 5,
-        readCapacity: 5,
+        writeCapacity: 25,
+        readCapacity: 25,
         attribute: [
             {
                 name: 'id',
@@ -55,8 +55,8 @@ export function createDatabase(scope: Construct, name: string): IDatabasesCreati
                 name: 'feed-url-index',
                 hashKey: 'feedUrl',
                 projectionType: 'ALL',
-                writeCapacity: 5,
-                readCapacity: 5,
+                writeCapacity: 25,
+                readCapacity: 25,
             },
         ],
     });

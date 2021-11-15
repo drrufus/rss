@@ -4,6 +4,7 @@ import { ICreateApiResult } from "./types/create-api-results";
 import { ILambdasCreationResult } from "./types/lambdas-creation-result";
 import { ApigatewayCors } from "../.gen/modules/mewa/aws/apigateway-cors";
 import { IUiCreationResults } from "./types/ui-creation-results";
+import { TerraformOutput } from "cdktf";
 // import { ApiGatewayEnableCors } from "../.gen/modules/squidfunk/aws/api-gateway-enable-cors";
 
 export function createApi(scope: Construct, name: string, lambdas: ILambdasCreationResult, ui: IUiCreationResults): ICreateApiResult {
@@ -341,6 +342,10 @@ export function createApi(scope: Construct, name: string, lambdas: ILambdasCreat
         functionName: lambdas.authorizerLambdaFunctionName,
         principal: 'apigateway.amazonaws.com',
         sourceArn: `${api.executionArn}/*/*`,
+    });
+
+    new TerraformOutput(scope, `${name}-api-url`, {
+        value: apiDeployment.invokeUrl,
     });
 
     return {

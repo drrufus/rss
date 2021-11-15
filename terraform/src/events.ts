@@ -1,5 +1,6 @@
 import { Construct } from 'constructs';
 import { CloudwatchEventRule, CloudwatchEventTarget, LambdaPermission } from '../.gen/providers/aws';
+import { CONFIG } from './config';
 import { ILambdasCreationResult } from './types/lambdas-creation-result';
 
 export function createEvents(scope: Construct, name: string, lambdas: ILambdasCreationResult): void {
@@ -7,7 +8,7 @@ export function createEvents(scope: Construct, name: string, lambdas: ILambdasCr
     const eventRule = new CloudwatchEventRule(scope, `${name}-event-rule`, {
         name: 'refresher-lambda-cronjob',
         description: 'YOLO',
-        scheduleExpression: 'cron(*/20 * * * ? *)',   // every 20 minutes
+        scheduleExpression: CONFIG.autoUpdateSchedule,
     });
 
     const eventTarget = new CloudwatchEventTarget(scope, `${name}-event-target`, {

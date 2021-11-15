@@ -1,11 +1,11 @@
-import { AssetType, TerraformAsset, TerraformOutput } from 'cdktf';
+import { TerraformOutput } from 'cdktf';
 import { Construct } from 'constructs';
 import * as path from 'path';
 import * as glob from 'glob';
 import * as mime from 'mime-types';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
-import { DataAwsIamPolicyDocument, Route53Zone, S3Bucket, S3BucketObject } from '../.gen/providers/aws';
+import { S3Bucket, S3BucketObject } from '../.gen/providers/aws';
 import { IUiCreationResults } from './types/ui-creation-results';
 
 export function createUiEntities(scope: Construct, name: string): IUiCreationResults {
