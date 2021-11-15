@@ -34,7 +34,14 @@ export const FeedsList = (props: IProps) => {
         console.log(`Retrieving feeds...`);
         setLoadingState(true);
         const response = await axios.get(`${config.host}/feeds?owner=${auth?.profileObj.email}`);
-        setFeeds(response.data.feeds);
+        setFeeds(response.data.feeds.sort((feed1: any, feed2: any) => {
+            if (feed1.name > feed2.name) {
+                return 1;
+            } else if (feed1.name < feed2.name) {
+                return -1;
+            }
+            return 0;
+        }));
         setLoadingState(false);
     };
 
