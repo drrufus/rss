@@ -7,11 +7,11 @@ This app allows you to create and view custom RSS-feeds. Each created channel ca
 ## Components overview
 
 + The core of all functionality is powered by `Lambdas` (with NodeJS runtime, code is written in TypeScript);
-+ All data is stored in `DynamoDB` tables splitted into chunks;
++ All data is stored in `DynamoDB` tables split into chunks;
 + The UI is a regular React SPA, deployed as `S3 static website`;
-+ `ApiGateway REST API` provides an access to Lambdas and to the UI's S3 bucket;
++ `ApiGateway REST API` provides access to Lambdas and to the UI's S3 bucket;
 + API is secured by authorizer-Lambda using Google OAuth;
-+ Regular udpating task is being triggered by `EventBridge` job;
++ Regular updating task is being triggered by `EventBridge` job;
 + Infrastructure-management is implemented via `Terraform's CDKTF` in TypeScript;
 
 ## Configuration
@@ -30,7 +30,7 @@ A bit more interesting.
 
 The most important parameters are located in `src/config.ts` file. As you can see, here you can set your AWS credentials (if they're stored not in default environment variables), AWS region and a schedule (like a cron-expression) for auto-updates of feeds.
 
-As far as it's also a NodeJS project, before your first deployment it's necessary do download all dependencies (`npm i ; npm run get`). Then you should be able to run commands like `npm run deploy` or `npm run undeploy`.
+As far as it's also a NodeJS project, before your first deployment, it's necessary to download all dependencies (`npm i ; npm run get`). Then you should be able to run commands like `npm run deploy` or `npm run undeploy`.
 
 When the infrastructure is deployed - you'll see a URL of the API in a console. Open `<URL>/ui/` in your browser and test the app.
 
@@ -46,11 +46,11 @@ You have to provide a name, an associated link (don't confuse with an actual RSS
 
 When the feed is created - you can add some RSS sources.
 
-It's also possible to choose something from predefined list.
+It's also possible to choose something from a predefined list.
 
 ![](https://sun9-46.userapi.com/impg/gMKmWzouJiiWJsQUdBvlhsYeoGhZW8roGjstAw/OtAN1-IPOC0.jpg?size=519x410&quality=95&sign=f3b8038ebf5a3e9e19f412fe3535e3bd&type=album)
 
-If everything is OK - a new source will be added to the feed and a content will be updated.
+If everything is OK - a new source will be added to the feed and content will be updated.
 
 On the top of the feed content you can also see some control buttons:
 
