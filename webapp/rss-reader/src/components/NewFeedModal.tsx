@@ -93,7 +93,10 @@ export const NewFeedModal = (props: IProps) => {
                 />
             </Form.Item>
 
-            <Form.Item validateStatus={linkIsValid ? 'success' : 'error'}>
+            <Form.Item
+                validateStatus={linkIsValid ? 'success' : 'error'}
+                help="A link associated with this new feed. Don't confuse it with an actual RSS-source URL, you can set it up later."
+            >
                 <Input
                     placeholder="Link"
                     value={linkInput}
