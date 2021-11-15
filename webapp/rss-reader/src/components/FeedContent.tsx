@@ -5,14 +5,10 @@ import { config } from '../config';
 import { IPost } from '../types/post';
 import { Post } from './Post';
 import { IFeed } from '../types/feed';
-import { Pagination, Spin, Result, Button as AntButton } from 'antd';
+import { Pagination, Spin, Result, Button as AntButton, Popover, Input, message } from 'antd';
 import styled from 'styled-components';
-import { SmileOutlined, EditOutlined, RedoOutlined, FrownOutlined } from '@ant-design/icons';
+import { SmileOutlined, PlusCircleOutlined, RedoOutlined, FrownOutlined, CopyOutlined } from '@ant-design/icons';
 import { EditFeedModal } from './EditFeedModal';
-
-interface IProps {
-
-}
 
 interface IPaginationState {
     page: number;
@@ -20,7 +16,13 @@ interface IPaginationState {
 }
 
 const Button = styled(AntButton)`
-    margin: 0 2px;
+    margin: 2px;
+    box-sizing: border-box;
+    @media only screen and (max-width: 748px) {
+        span:last-child {
+            display: none;
+        }
+    }
 `;
 
 const ContentHeaderContainer = styled.div`
@@ -31,7 +33,7 @@ const ContentHeaderContainer = styled.div`
     padding: 0 16px;
 `;
 
-export const FeedContent = (props: IProps) => {
+export const FeedContent = () => {
 
     const state = useContext(AppContext);
     const { auth, selectedFeedId } = state;
@@ -99,9 +101,22 @@ export const FeedContent = (props: IProps) => {
             page: 0,
             pageSize: size,
         }));
-        console.log('set');
-        console.log(pagination);
     };
+
+    const feedXmlUrl = `${window.location.origin}${config.host}/feeds/${selectedFeedId}?format=xml`;
+
+    const copyUrl = () => {
+        console.log(`xml feed url: ${feedXmlUrl}`);
+        navigator.clipboard.writeText(feedXmlUrl).then(function () {
+            message.success('URL was copied to your clipboard', 5);
+        }, function (_) {
+            message.error('Ooops. We can not copy the URL to your clipboard, please do it manually', 10);
+        });
+    };
+
+    const copyButtonPopoverContent = <>
+        <Input value={feedXmlUrl} readOnly={true} style={{ width: '250px' }} />
+    </>;
 
     if (loading) {
         return <Spin tip="Loading..." spinning={true} className="spinner-container"></Spin>;
@@ -110,8 +125,11 @@ export const FeedContent = (props: IProps) => {
             <ContentHeaderContainer>
                 <h2>Feed "{feed!.feedName}"</h2>
                 <div>
+                    <Popover content={copyButtonPopoverContent} title="Feed URL:">
+                        <Button type="primary" onClick={copyUrl} icon={<CopyOutlined />}>Copy RSS URL</Button>
+                    </Popover>
                     <Button type="primary" onClick={updateFeed} icon={<RedoOutlined />}>Refresh</Button>
-                    <Button type="primary" onClick={() => setEditModalOpenState(true)} icon={<EditOutlined />}>Edit feed</Button>
+                    <Button type="primary" onClick={() => setEditModalOpenState(true)} icon={<PlusCircleOutlined />}>Add sources</Button>
                 </div>
             </ContentHeaderContainer>
             <EditFeedModal feed={feed!} open={editModalOpen} onClosed={() => setEditModalOpenState(false)} onSourcesChange={updateFeed} />
@@ -136,7 +154,7 @@ export const FeedContent = (props: IProps) => {
         </div>;
     } else if (errorMsg) {
         return <Result
-            icon={<FrownOutlined style={{ color: '#ff928a' }}/>}
+            icon={<FrownOutlined style={{ color: '#ff928a' }} />}
             title={`Unable to get this feed: ${errorMsg}`}
         />;
     } else {

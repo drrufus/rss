@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Modal, Input, Alert, Radio, Form } from 'antd';
 import { config } from '../config';
 import { AppContext } from '../App';
-import { resolveIcon } from '../misc/utils';
+import { isValidHttpUrl, resolveIcon } from '../misc/utils';
 
 interface IProps {
     open: boolean;
@@ -22,6 +22,13 @@ export const NewFeedModal = (props: IProps) => {
 
     const [nameInput, setNameInput] = useState('');
     const nameIsValid = nameInput.match(/^[a-zA-Z0-9-]{3,20}$/);
+
+    const [descriptionInput, setDescriptionInput] = useState('');
+    const descriptionIsValid = descriptionInput.length > 0;
+
+    const [linkInput, setLinkInput] = useState('');
+    const linkIsValid = isValidHttpUrl(linkInput);
+
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [selectedIcon, setSelectedIcon] = useState(ICONS[0]);
     const [loading, setLoadingState] = useState(false);
@@ -29,6 +36,8 @@ export const NewFeedModal = (props: IProps) => {
     useEffect(() => {
         setSelectedIcon(ICONS[0]);
         setNameInput('');
+        setDescriptionInput('');
+        setLinkInput('');
     }, [open]);
 
     const create = async () => {
@@ -39,6 +48,8 @@ export const NewFeedModal = (props: IProps) => {
                 {
                     name: nameInput,
                     icon: selectedIcon,
+                    description: descriptionInput,
+                    link: linkInput,
                 },
                 { headers: { Authorization: `Bearer ${context.auth!.accessToken}` } }
             );
@@ -55,7 +66,7 @@ export const NewFeedModal = (props: IProps) => {
         visible={open}
         title="Create new feed"
         onOk={create}
-        okButtonProps={{ disabled: !nameIsValid || !authorized, loading }}
+        okButtonProps={{ disabled: !nameIsValid || !authorized || !descriptionIsValid || !linkIsValid, loading }}
         onCancel={onCancel}
     >
         {!authorized && <Alert message="You are not authorized" type="error" style={{ margin: '8px 0' }} />}
@@ -70,6 +81,23 @@ export const NewFeedModal = (props: IProps) => {
                     value={nameInput}
                     onChange={e => setNameInput(e.target.value)}
                     maxLength={20}
+                />
+            </Form.Item>
+
+            <Form.Item validateStatus={descriptionIsValid ? 'success' : 'error'}>
+                <Input
+                    placeholder="Description"
+                    value={descriptionInput}
+                    onChange={e => setDescriptionInput(e.target.value)}
+                    maxLength={60}
+                />
+            </Form.Item>
+
+            <Form.Item validateStatus={linkIsValid ? 'success' : 'error'}>
+                <Input
+                    placeholder="Link"
+                    value={linkInput}
+                    onChange={e => setLinkInput(e.target.value)}
                 />
             </Form.Item>
 
